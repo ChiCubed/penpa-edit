@@ -474,6 +474,9 @@ class Puzzle {
             // Add multicolor data
             if (this.mode[mode].multicolor === undefined)
                 this.mode[mode].multicolor = ["", 1];
+            // Add solution area data
+            if (this.mode[mode].solution_area === undefined)
+                this.mode[mode].solution_area = ["", ""];
         }
         
         for (let mode of ['pu_q', 'pu_q_col', 'pu_a', 'pu_a_col']) {
