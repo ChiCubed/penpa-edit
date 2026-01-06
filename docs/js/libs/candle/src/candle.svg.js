@@ -37,6 +37,10 @@ const _2PI = 2*Math.PI,
 	S_ATT_FILL        = 'fill',
 	S_ATT_STROKE      = 'stroke',
 	S_ATT_STROKEWIDTH = 'stroke-width',
+	S_ATT_STROKE_DASHARRAY = 'stroke-dasharray',
+	S_ATT_STROKE_DASHOFFSET = 'stroke-dashoffset',
+	S_ATT_STROKE_LINECAP = 'stroke-linecap',
+	S_ATT_TRANSFORM   = 'transform',
 	S_ATT_RENDERING   = 'shape-rendering',
 
 	S_NONE = 'none',
@@ -72,14 +76,25 @@ class SVGWrapper extends WrapperBase {
 
 		this.use = this.getTypeList();
 
+		// track line dashedness (canvas does this internally)
+		this.lineDash = null;
+
+		this.transform = '';
+		this.stateStack = [];
+
 		// 外部から変更される追加プロパティ
 		this.vid      = '';
 		this.elements = {};
 		this._textcache = {};
 
+		this.isGroup = false;
+		this.groupSize = {};
+		this.textGroupSize = {};
+
 		// variables for internal
 		this.target = null;	// エレメントの追加対象となるオブジェクト
 		this.layers = {};
+		this._layerid = '';
 
 		// 描画中path
 		this.cpath    = [];
@@ -136,32 +151,67 @@ class SVGWrapper extends WrapperBase {
 		this.addVectorElement(false,false);
 	}
 
-	clear(){
-		var root = this.child, el = root.firstChild;
-		while(!!el){ root.removeChild(el); el = root.firstChild;}
+	clear(strong = false){
+		if (!strong) {
+			// hide everything
+			// obliterate everything already hidden with no vid, to avoid blowup
+			var parents = [this.child], cur = this.child.firstChild;
+			while (cur) {
+				while (cur && cur.nodeName.toUpperCase() === 'G') {
+					parents.push(cur);
+					cur = cur.firstChild;
+				}
 
-		/* resetElement */
-		this.vid = '';
-		this.elements = {};
-		this.layers = {};
-		this.target = this.child;
-		this.setLayer();
-		this._textcache = {};
+				if (cur) {
+					var nxt = cur.nextSibling;
+					if (cur.getAttribute('display') === 'none') {
+						// delete
+						if (!cur.hasAttribute('data-vid')) {
+							parents.at(-1).removeChild(cur);
+						}
+					} else {
+						// hide
+						this.hide(cur);
+					}
+					cur = nxt;
+				}
+
+				while (!cur && parents.length > 0) {
+					cur = parents.pop().nextSibling;
+				}
+			}
+		} else {
+			var root = this.child, el = root.firstChild;
+			while(!!el){ root.removeChild(el); el = root.firstChild;}
+
+			/* resetElement */
+			this.vid = '';
+			this.groupSize = {};
+			this.isGroup = false;
+			this.elements = {};
+			this.layers = {};
+			this.target = this.child;
+			this.setLayer();
+			this._textcache = {};
+		}
 	}
 
 	/* layer functions */
 	setLayer(layerid, option){
 		option = option || {};
 		this.vid = '';
+		this.isGroup = false;
 		if(!!layerid){
 			var layer = this.layers[layerid];
 			if(!layer){
 				layer = this.layers[layerid] = newEL('g');
 				this.child.appendChild(layer);
 			}
+			this._layerid = layerid;
 			this.target = layer;
 		}
 		else{
+			this._layerid = '';
 			this.target = this.child;
 		}
 		
@@ -169,6 +219,10 @@ class SVGWrapper extends WrapperBase {
 		
 		this.freezepath = (!!option && option.freeze);
 	}
+
+	/* getter / setter for layer */
+	set layer(layerid) { this.setLayer(layerid); }
+	get layer() { return this._layerid; }
 
 	/* property functions */
 	setRendering(render){
@@ -187,12 +241,41 @@ class SVGWrapper extends WrapperBase {
 		child.setAttribute('viewBox', [m[0],m[1],width,height].join(' '));
 	}
 
-	/* Canvas API functions (for transform) */
-	translate(left,top){
-		var m = this.child.getAttribute('viewBox').split(/ /);
-		m[0]=-left; m[1]=-top;
-		this.child.setAttribute('viewBox', m.join(' '));
+	/* Canvas API functions (save/restore) */
+	save() {
+		// none of these need deep copy
+		const attrList = [
+			'transform',
+			'font', 'textAlign', 'textBaseline',
+			'fillStyle', 'strokeStyle',
+			'lineWidth',
+			'lineDash', 'lineDashOffset', 'lineCap'
+		];
+
+		var state = {};
+		for (let attr of attrList) { state[attr] = this[attr]; }
+		this.stateStack.push(state);
 	}
+
+	restore() {
+		var state = this.stateStack.pop();
+		for (let attr in state) { this[attr] = state[attr]; }
+	}
+
+	/* Canvas API functions (for transform) */
+	/*
+		NOTE: transformation only gets used when elems are finalised,
+		not during their construction.
+		also this implementation can cause the transform to blow up
+		if you dont use save/restore
+	*/
+	translate(left,top){ this.transform += ` translate(${left} ${top})`; }
+	rotate(angle) { this.transform += ` rotate(${angle * 180 / Math.PI})`; }
+	// TODO:
+	// in canvas this is scaling from the origin,
+	// but this is clearly semantically different in some cases in SVGs.
+	// make sure those don't happen?
+	scale(x, y) { this.transform += ` scale(${x} ${y})`; }
 
 	/* Canvas API functions (for path) */
 	beginPath(){
@@ -217,7 +300,7 @@ class SVGWrapper extends WrapperBase {
 		this.cpath.push(S_PATH_MOVE,x,y,S_PATH_LINE,(x+w),y,(x+w),(y+h),x,(y+h),S_PATH_CLOSE);
 		this.lastpath = S_PATH_CLOSE;
 	}
-	arc(cx,cy,r,startRad,endRad,antiClockWise){
+	arc(cx,cy,r,startRad,endRad,antiClockWise,move=true){
 		var sx,sy,ex,ey;
 		if(endRad-startRad>=_2PI){ sx=cx+r; sy=cy; ex=cx+r; ey=cy;}
 		else{
@@ -227,7 +310,7 @@ class SVGWrapper extends WrapperBase {
 		if(endRad-startRad>=_2PI){ sy+=0.125;}
 		var unknownflag = (startRad>endRad)!==(Math.abs(endRad-startRad)>Math.PI);
 		var islong = ((antiClockWise^unknownflag)?1:0), sweep = ((islong===0^unknownflag)?1:0);
-		this.cpath.push(S_PATH_MOVE,sx,sy,S_PATH_ARCTO,r,r,0,islong,sweep,ex,ey);
+		this.cpath.push(move?S_PATH_MOVE:S_PATH_LINE,sx,sy,S_PATH_ARCTO,r,r,0,islong,sweep,ex,ey);
 		this.lastpath = S_PATH_ARCTO;
 	}
 
@@ -260,6 +343,14 @@ class SVGWrapper extends WrapperBase {
 	}
 
 	/* extended functions */
+	setLineDash(segments) {
+        if (segments && segments.length > 0) {
+            this.lineDash = segments.join(' ');
+        } else {
+            this.lineDash = null;
+        }
+	}
+
 	setLinePath(){
 		var _args=arguments, _len=_args.length, len=_len-((_len|1)?1:2), a=[];
 		for(var i=0;i<len;i+=2){ a[i>>1] = [_args[i],_args[i+1]];}
@@ -382,16 +473,25 @@ class SVGWrapper extends WrapperBase {
 
 	/* Canvas API functions (for text) */
 	fillText(text,x,y,maxLength){
-		var el = (!!this.vid ? this.elements[this.vid] : null);
+		// TODO
+		// turn off max length, since text is getting stretched
+		maxLength = '';
+
+		let vid = this.reify_vid_text();
+		var el = (!!vid ? this.elements[vid] : null);
 		if(!!text && !!this.fillStyle && this.fillStyle!=="none"){
 			var el2 = this.fillText_main(el,text,x,y,(maxLength||''));
-			if(!el && !!this.vid){ this.elements[this.vid] = el2;}
+			if(!el && !!vid){
+				this.elements[vid] = el2;
+				el2.setAttribute('data-vid', vid);
+			}
 		}
 		else if(!!el){ this.hide(el);}
-		this.vid = '';
+		this._step_vid(true);
 	}
 	fillText_main(el,text,x,y,maxLength){
-		var newel = !el, _cache = (!!this.vid ? this._textcache[this.vid] || {} : {});
+		let vid = this.reify_vid_text();
+		var newel = !el, _cache = (!!vid ? this._textcache[vid] || {} : {});
 		if(newel){ el = newEL('text');}
 		else{ this.show(el);}
 
@@ -423,7 +523,7 @@ class SVGWrapper extends WrapperBase {
 		}
 
 		if(_cache.font!==this.font){
-			if(this.font.match(/(.+\s)?([0-9]+)px (.+)$/)){
+			if(this.font.match(/(.+\s)?([0-9.]+)px (.+)$/)){
 				var style = RegExp.$1, size = RegExp.$2, family = RegExp.$3;
 				el.setAttribute('font-size', size);
 				
@@ -443,9 +543,19 @@ class SVGWrapper extends WrapperBase {
 			_cache.font = this.font;
 		}
 
+		var transform = this.transform;
+		if (_cache.transform!==transform) {
+			if (transform) {
+				el.setAttribute(S_ATT_TRANSFORM, transform);
+			} else {
+				el.removeAttribute(S_ATT_TRANSFORM);
+			}
+			_cache.transform = transform;
+		}
+
 		if(el.textContent!==text){ el.textContent = text;}
 
-		if(!!this.vid){ this._textcache[this.vid] = _cache;}
+		if(!!vid){ this._textcache[vid] = _cache;}
 
 		if(newel){ this.target.appendChild(el);}
 
@@ -459,18 +569,58 @@ class SVGWrapper extends WrapperBase {
 		return el;
 	}
 
+	/* Canvas API functions (extensions from CanvasRenderingContext2D.ext.js) */
+	text(text, x, y, width = 1e4) {
+		var fontsize = parseFloat(this.font.split("px")[0]);
+		// this.strokeText(text, x, y + 0.28 * fontsize, width); // TODO
+        this.fillText(text, x, y + 0.28 * fontsize, width);
+	}
+
+	arrow(startX, startY, endX, endY, controlPoints) {
+		// this is just copy pasted whatever
+        let dx = endX - startX;
+        let dy = endY - startY;
+        let len = Math.sqrt(dx * dx + dy * dy);
+        let sin = dy / len;
+        let cos = dx / len;
+        let a = [];
+        a.push(0, 0);
+        for (let i = 0; i < controlPoints.length; i += 2) {
+            let x = controlPoints[i];
+            let y = controlPoints[i + 1];
+            a.push(x < 0 ? len + x : x, y);
+        }
+        a.push(len, 0);
+        for (let i = controlPoints.length; i > 0; i -= 2) {
+            let x = controlPoints[i - 2];
+            let y = controlPoints[i - 1];
+            a.push(x < 0 ? len + x : x, -y);
+        }
+        a.push(0, 0);
+        for (let i = 0; i < a.length; i += 2) {
+            let x = a[i] * cos - a[i + 1] * sin + startX;
+            let y = a[i] * sin + a[i + 1] * cos + startY;
+            if (i === 0) { this.moveTo(x, y); }
+            else { this.lineTo(x, y); }
+        }
+	}
+
 	/* Canvas API functions (for image) */
 	drawImage(image,sx,sy,sw,sh,dx,dy,dw,dh){
-		var el = (!!this.vid ? this.elements[this.vid] : null);
+		let vid = this.reify_vid();
+		var el = (!!vid ? this.elements[vid] : null);
 		if(!!image){
 			if(sw===(void 0)){ sw=image.width; sh=image.height;}
 			if(dx===(void 0)){ dx=sx; sx=0; dy=sy; sy=0; dw=sw; dh=sh;}
 			
 			var el2 = this.drawImage_main(el,image,sx,sy,sw,sh,dx,dy,dw,dh);
-			if(!el && !!this.vid){ this.elements[this.vid] = el2;}
+			if(!el && !!vid){
+				this.elements[vid] = el2;
+				el2.setAttribute('data-vid', vid);
+			}
 		}
 		else if(!!el){ this.hide(el);}
-		this.vid = '';
+		this._step_vid();
 	}
 	drawImage_main(el,image,sx,sy,sw,sh,dx,dy,dw,dh){
 		var newel = !el;
@@ -495,13 +645,17 @@ class SVGWrapper extends WrapperBase {
 	addVectorElement(isfill,isstroke){
 		isfill   = isfill   && !!this.fillStyle   && (this.fillStyle  !=="none");
 		isstroke = isstroke && !!this.strokeStyle && (this.strokeStyle!=="none");
-		var el = (!!this.vid ? this.elements[this.vid] : null), el2 = null;
+		let vid = this.reify_vid();
+		var el = (!!vid ? this.elements[vid] : null), el2 = null;
 		if(isfill || isstroke){
 			el2 = this.addVectorElement_main(el,isfill,isstroke);
-			if(!el && !!this.vid){ this.elements[this.vid] = el2;}
+			if(!el && !!vid){
+				this.elements[vid] = el2;
+				el2.setAttribute('data-vid', vid);
+			}
 		}
 		else if(!!el){ this.hide(el);}
-		this.vid = '';
+		this._step_vid();
 		return el2;
 	}
 	addVectorElement_main(el,isfill,isstroke){
@@ -516,8 +670,14 @@ class SVGWrapper extends WrapperBase {
 		if(!this.freezepath || newel){
 			var path = this.cpath.join(' ');
 			var linewidth = (isstroke ? this.lineWidth : null);
+			var linedash = (isstroke ? this.lineDash : null);
+			var linedashoffset = (isstroke ? this.lineDashOffset : null);
+			var linecap = (isstroke ? this.lineCap : null);
 			if(el.getAttribute(S_ATT_PATH)       !==path)     { el.setAttribute(S_ATT_PATH, path);}
 			if(el.getAttribute(S_ATT_STROKEWIDTH)!==linewidth){ el.setAttribute(S_ATT_STROKEWIDTH, linewidth);}
+			if(el.getAttribute(S_ATT_STROKE_DASHARRAY)!==linedash){ el.setAttribute(S_ATT_STROKE_DASHARRAY, linedash);}
+			if(el.getAttribute(S_ATT_STROKE_DASHOFFSET)!==linedashoffset){ el.setAttribute(S_ATT_STROKE_DASHOFFSET, linedashoffset);}
+			if(el.getAttribute(S_ATT_STROKE_LINECAP)!==linecap){ el.setAttribute(S_ATT_STROKE_LINECAP, linecap);}
 		}
 		
 		var fillcolor   = (isfill   ? this.fillStyle   : S_NONE);
@@ -525,13 +685,84 @@ class SVGWrapper extends WrapperBase {
 		if(el.getAttribute(S_ATT_FILL)  !==fillcolor)  { el.setAttribute(S_ATT_FILL,   fillcolor);}
 		if(el.getAttribute(S_ATT_STROKE)!==strokecolor){ el.setAttribute(S_ATT_STROKE, strokecolor);}
 
+		var transform = this.transform;
+		if (el.getAttribute(S_ATT_TRANSFORM)!==transform){
+			if (transform) {
+				el.setAttribute(S_ATT_TRANSFORM, transform);
+			} else {
+				el.removeAttribute(S_ATT_TRANSFORM);
+			}
+		}
+
 		if(newel){ this.target.appendChild(el);}
 		return el;
 	}
 
 	/* VectorID Functions */
-	vhide(vids){
-		var el = this.elements[this.vid];
+
+	// we need to separate text and path elements,
+	// because they cant be edited into one another.
+	// im just gonna append a `_t` suffix to text
+	reify_vidGroup(vid, i, text = false) {
+		return `${vid}[${i}]${text?'.txt':''}`
+	}
+
+	reify_vid(vid = '') {
+		vid = vid || this.vid;
+		if (this.isGroup) { vid = this.reify_vidGroup(vid, this.groupSize[vid]); }
+		return vid;
+	}
+
+	reify_vid_text(vid = '') {
+		vid = vid || this.vid;
+		if (this.isGroup) { vid = this.reify_vidGroup(vid, this.textGroupSize[vid], true); }
+		return vid;
+	}
+	
+	begin_vidGroup(vid = '') {
+		if (vid) { this.vid = vid; }
+		this.isGroup = true;
+		this.oldGroupSize = this.groupSize[this.vid] || 0;
+		this.oldTextGroupSize = this.textGroupSize[this.vid] || 0;
+		this.groupSize[this.vid] = 0;
+		this.textGroupSize[this.vid] = 0;
+	}
+
+	end_vidGroup() {
+		for (let i = this.groupSize[this.vid]; i < this.oldGroupSize; ++i) {
+			this.vhide(this.reify_vidGroup(this.vid, i));
+		}
+		for (let i = this.textGroupSize[this.vid]; i < this.oldTextGroupSize; ++i) {
+			this.vhide(this.reify_vidGroup(this.vid, i, true));
+		}
+		this.oldGroupSize = 0;
+		this.oldTextGroupSize = 0;
+
+		this.vid = '';
+		this.isGroup = false;
+	}
+
+	_step_vid(text = false) {
+		if (this.isGroup) {
+			if (text) { this.textGroupSize[this.vid] += 1; }
+			else { this.groupSize[this.vid] += 1; }
+		} else {
+			this.vid = '';
+		}
+	}
+
+	vhideGroup(vid = '') {
+		vid = vid || this.vid;
+		for (let i = 0; i < this.groupSize[vid]; ++i) {
+			this.vhide(this.reify_vidGroup(vid, i));
+		}
+		for (let i = 0; i < this.textGroupSize[vid]; ++i) {
+			this.vhide(this.reify_vidGroup(vid, i, true));
+		}
+	}
+
+	vhide(vid) {
+		var el = this.elements[vid || this.vid];
 		if(!!el){ this.hide(el);}
 	}
 	

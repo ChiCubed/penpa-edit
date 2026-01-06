@@ -61,12 +61,14 @@ class CanvasWrapper extends WrapperBase {
 		this.use = this.getTypeList();
 
 		// Layer additional
-		this.currentLayerId = '_empty';
-		this.isedgearray    = {_empty:false};
+		this.currentLayerId = '';
+		this.isedgearray    = {'':false};
 		this.isedge         = false;
 
-		this.x0 = 0;
-		this.y0 = 0;
+		// this.x0 = 0;
+		// this.y0 = 0;
+		// this.sx = 1;
+		// this.sy = 1;
 	}
 	getTypeList(){ return {};} // Overridden later
 
@@ -137,8 +139,7 @@ class CanvasWrapper extends WrapperBase {
 
 	clear(){
 		this.setProperties(true,true);
-		this.context.setTransform(1,0,0,1,0,0); // 変形をリセット
-		this.context.translate(this.x0, this.y0);
+		// this.context.setTransform(1,0,0,1,0,0); // 変形をリセット
 		if(isBrowser){
 			var rect = metrics.getRectSize(this.canvas);
 			this.context.clearRect(0,0,rect.width,rect.height);
@@ -147,8 +148,8 @@ class CanvasWrapper extends WrapperBase {
 
 	/* layer functions */
 	setLayer(layerid, option){
-		var layer = this.currentLayerId = (!!layerid ? layerid : '_empty');
-		this.isedge = this.isedgearray[(this.isedgearray[layer]!==void 0) ? layer : "_empty"];
+		var layer = this.currentLayerId = (!!layerid ? layerid : '');
+		this.isedge = this.isedgearray[(this.isedgearray[layer]!==void 0) ? layer : ""];
 		this.setEdgeStyle();
 		
 		option = option || {};
@@ -167,6 +168,10 @@ class CanvasWrapper extends WrapperBase {
 			}
 		}
 	}
+
+	/* getter / setter for layer */
+	set layer(layerid) { this.setLayer(layerid); }
+	get layer() { return this.currentLayerId; }
 
 	/* property functions */
 	setRendering(render){
@@ -193,24 +198,34 @@ class CanvasWrapper extends WrapperBase {
 		child.height = height;
 	}
 
+	/* Canvas API functions (save/restore) */
+	save() { this.context.save(); }
+	restore() { this.context.restore(); }
+
 	/* Canvas API functions (for transform) */
-	translate(left,top){
-		this.x0 = left;
-		this.y0 = top;
-		this.context.translate(left, top);
-	}
+	// TODO: interaction with save/restore?
+	translate(left,top){ this.context.translate(left, top); }
+	scale(x, y) { this.context.scale(x, y); }
+	rotate(angle) { this.context.rotate(angle); }
+
 
 	/* 内部用関数 */
 	setProperties(isfill,isstroke){
+		// why is this the architecture instead of getters and setters?
+		// TODO: this definitely interacts wrong with save/restore
+		// good thing i dont care E:)
 		isfill   = isfill   && !!this.fillStyle   && (this.fillStyle  !=="none");
 		isstroke = isstroke && !!this.strokeStyle && (this.strokeStyle!=="none");
 		var c = this.context;
 		if(isfill)  { c.fillStyle   = this.fillStyle;}
 		if(isstroke){ c.strokeStyle = this.strokeStyle;}
+		c.lineCap      = this.lineCap;
+		c.lineDashOffset = this.lineDashOffset;
 		c.lineWidth    = this.lineWidth;
 		c.font         = this.font;
 		c.textAlign    = this.textAlign;
 		c.textBaseline = this.textBaseline;
+		// TODO: when and how do we clear line dash setting?
 		return (isfill || isstroke);
 	}
 
@@ -270,6 +285,10 @@ class CanvasWrapper extends WrapperBase {
 	}
 
 	/* extended functions */
+	setLineDash(segments) {
+		this.context.setLineDash(segments);
+    }
+
 	setLinePath(){
 		var _args=arguments, _len=_args.length, len=_len-((_len|1)?1:2), a=[];
 		for(var i=0;i<len;i+=2){ a[i>>1] = [_args[i],_args[i+1]];}
@@ -404,6 +423,18 @@ class CanvasWrapper extends WrapperBase {
 				this.context.fillText(text,x,y);
 			}
 		}
+	}
+
+	/* Canvas API functions (extensions from CanvasRenderingContext2D.ext.js) */
+	text(text, x, y, width = 1e4) {
+		// this.context.text(text, x, y, width);
+        var fontsize = parseFloat(this.font.split("px")[0]);
+        // this.strokeText(text, x, y + 0.28 * fontsize, width);
+        this.fillText(text, x, y + 0.28 * fontsize, width);
+	}
+
+	arrow(startX, startY, endX, endY, controlPoints) {
+		this.context.arrow(startX, startY, endX, endY, controlPoints);
 	}
 
 	/* Canvas API functions (for image) */
