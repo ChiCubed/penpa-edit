@@ -123,7 +123,8 @@
             "./js/style.js",
             "./js/general.js",
             "./js/customcolor.js",
-            "./js/translate.js"
+            "./js/translate.js",
+            "./js/rorschach.js" // TODO
         ];
         for (let i = 0; i < script_sources.length; i++) {
             let script = document.createElement("script");
@@ -1484,6 +1485,7 @@
             </div>
             <div class="nb_button">
                 <input type="button" id="load_url" value="Load URL" onclick="import_url();" />
+<input type="button" value="Load Rorschach's River" onclick="import_url(rorschach)" />
             </div>
         </div>
     </div>
