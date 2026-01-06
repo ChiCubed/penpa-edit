@@ -175,6 +175,8 @@
                         <span id="edge_button" class="label toggle_btn">OFF</span>
                         <span id="quick_panel_toggle_label" class="label_mode">Panel:</span>
                         <span id="quick_panel_toggle" class="label toggle_btn">OFF</span>
+                        <span id="view_solution_area_button0" class="label_mode">View solution mask:</span>
+                        <span id="view_solution_area_button" class="label toggle_btn">OFF</span>
                     </div>
                     <div id="mode_button" class="mode_button">
                         <label class="label_mode" id="mode_txt">Mode:</label>
@@ -192,6 +194,8 @@
                         <label for="mo_cage" class="label" id="mo_cage_lb">Cage</label>
                         <input type="radio" name="mode" id="mo_board" />
                         <label for="mo_board" class="label" id="mo_board_lb">Box</label>
+                        <input type="radio" name="mode" id="mo_solution_area" />
+                        <label for="mo_solution_area" class="label" id="mo_solution_area_lb">Mask</label>
                         <input type="radio" name="mode" id="mo_move" />
                         <label for="mo_move" class="label" id="mo_move_lb">Move</label>
                         <br id="mode_break">
@@ -235,6 +239,8 @@
                             <label for="sub_lineE2" class="labelL" id="sub_lineE2_lb">Diagonal</label>
                             <input type="radio" name="mode_lineE" value="3" id="sub_lineE3">
                             <label for="sub_lineE3" class="labelL" id="sub_lineE3_lb">Free</label>
+                            <input type="radio" name="mode_lineE" value="6" id="sub_lineE6">
+                            <label for="sub_lineE6" class="labelL" id="sub_lineE6_lb">Middle</label>
                             <input type="radio" name="mode_lineE" value="4" id="sub_lineE4">
                             <label for="sub_lineE4" class="labelL" id="sub_lineE4_lb">Helper (x)</label>
                             <input type="radio" name="mode_lineE" value="5" id="sub_lineE5">
@@ -712,6 +718,23 @@
                             <input type="text" name="style_special" id="colorpicker_special" />
                         </span>
                     </div>
+                    <div id="style_solution_area" style="display:none;">
+                        <span id="inclusive_solution_area_button0" class="label_mode">Include boundary:</span>
+                        <span id="inclusive_solution_area_button" class="label toggle_btn">ON</span>
+                    </div>
+                    <div id="orientation_button" style="display:none;">
+                        <span>
+                            <label class="label_mode tooltip" id="style_txt">Orientation:</label>
+                        </span>
+                        <input type="radio" name="orientation_button" value="R" id="rot_R" checked="checked">
+                        <label for="rot_R" class="labelL" id="rot_R_lb">A</label>
+                        <input type="radio" name="orientation_button" value="U" id="rot_U">
+                        <label for="rot_U" class="labelL" id="rot_U_lb"><span class="rotate rotate_up">A</span></label>
+                        <input type="radio" name="orientation_button" value="D" id="rot_D">
+                        <label for="rot_D" class="labelL" id="rot_D_lb"><span class="rotate rotate_down">A</span></label>
+                        <input type="radio" name="orientation_button" value="L" id="rot_L">
+                        <label for="rot_L" class="labelL" id="rot_L_lb"><span class="rotate rotate_left">A</span></label>
+                    </div>
                 </div>
             </div>
             <div id="ruletext"></div>
@@ -795,7 +818,7 @@
                 <canvas id="float-canvas" class="float-canvas"></canvas>
             </div>
             <div id="float-key-text">
-                <textarea class="text_area" class="text_area" rows="1" cols="20" maxlength="100" id="inputtext"></textarea>
+                <textarea class="text_area" class="text_area" rows="1" cols="20" maxlength="1000" id="inputtext"></textarea>
                 <input type="button" id="closeBtn_input1" value="Insert" />
                 <input type="button" id="closeBtn_input2" value="Clear" />
                 <input type="button" id="closeBtn_input3" value="Load" />
@@ -1074,6 +1097,10 @@
                     <button class="addbottom" id="rt_addbottom">+ &#9660;</button>
                     <button class="subbottom" id="rt_subbottom">&ndash; &#9650;</button>
                 </div>
+                <p>
+                    <span id="resize_whitespace_button0" class="label_mode">Adjust only whitespace:</span>
+                    <span id="resize_whitespace_button" class="label toggle_btn">OFF</span>
+                </p>
             </div>
             <br>
             <div class="nb_button">

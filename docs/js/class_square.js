@@ -48,7 +48,7 @@ class Puzzle_square extends Puzzle {
         var k = 0;
         var nx = this.nx0;
         var ny = this.ny0;
-        var adjacent, surround, type, use, neighbor, adjacent_dia;
+        var adjacent, surround, type, use, neighbor, adjacent_dia, edge_to_vertex;
         var point = [];
         const index = (x, y) => [x, y, this.nx0 * y + x];
         //center
@@ -72,7 +72,8 @@ class Puzzle_square extends Puzzle {
                 adjacent = [k - nx, k - 1, k + 1, k + nx];
                 adjacent_dia = [k - nx - 1, k - nx + 1, k + nx - 1, k + nx + 1];
                 surround = [];
-                point[k] = new Point(point[i + j * nx].x + 0.5 * this.size, point[i + j * nx].y + 0.5 * this.size, type, adjacent, surround, use, [], adjacent_dia, 0, index(i, j));
+                edge_to_vertex = [k + nx * ny, k + nx * ny + 1, k + 2 *nx * ny, k + 2 * nx * ny + nx];
+                point[k] = new Point(point[i + j * nx].x + 0.5 * this.size, point[i + j * nx].y + 0.5 * this.size, type, adjacent, surround, use, [], adjacent_dia, 0, index(i, j), edge_to_vertex, 4);
                 k++;
             }
         }
@@ -86,7 +87,8 @@ class Puzzle_square extends Puzzle {
                 adjacent = [k + nx, k - nx];
                 surround = [];
                 neighbor = [k - 2 * nx * ny, k - 2 * nx * ny + nx];
-                point[k] = new Point(point[i + j * nx].x, point[i + j * nx].y + 0.5 * this.size, type, adjacent, surround, use, neighbor, [], 0, index(i, j));
+                edge_to_vertex = [k - nx * ny - 1, k - nx * ny];
+                point[k] = new Point(point[i + j * nx].x, point[i + j * nx].y + 0.5 * this.size, type, adjacent, surround, use, neighbor, [], 0, index(i, j), edge_to_vertex);
                 k++;
             }
         }
@@ -97,7 +99,8 @@ class Puzzle_square extends Puzzle {
                 adjacent = [k + 1, k - 1];
                 surround = [];
                 neighbor = [k - 3 * nx * ny, k - 3 * nx * ny + 1];
-                point[k] = new Point(point[i + j * nx].x + 0.5 * this.size, point[i + j * nx].y, type, adjacent, surround, use, neighbor, [], 0, index(i, j));
+                edge_to_vertex = [k - 2 * nx * ny - nx, k - 2 * nx * ny];
+                point[k] = new Point(point[i + j * nx].x + 0.5 * this.size, point[i + j * nx].y, type, adjacent, surround, use, neighbor, [], 0, index(i, j), edge_to_vertex);
                 k++;
             }
         }
@@ -179,6 +182,16 @@ class Puzzle_square extends Puzzle {
         this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
     }
 
+    cell_to_subnodes(cell) {
+        if (!this.point[cell] || this.point[cell].type !== 0) {
+            return [];
+        }
+
+        let first_corner = 4 * this.nx0 * this.ny0 + 4 * cell;
+        let first_side = 8 * this.nx0 * this.ny0 + 4 * cell;
+        return [first_corner, first_corner+1, first_corner+2, first_corner+3, first_side, first_side+1, first_side+2, first_side+3];
+    }
+
     type_set() {
         var type
         let edit_mode = this.mode[this.mode.qa].edit_mode;
@@ -187,6 +200,7 @@ class Puzzle_square extends Puzzle {
             case "surface":
             case "multicolor":
             case "board":
+            case "solution_area":
                 type = [0];
                 break;
             case "symbol":
@@ -228,6 +242,8 @@ class Puzzle_square extends Puzzle {
                     type = [2, 3];
                 } else if (submode === "2") {
                     type = [0, 1];
+                } else if (submode === "6") {
+                    type = [1, 2, 3];
                 } else {
                     type = [1];
                 }
@@ -698,8 +714,6 @@ class Puzzle_square extends Puzzle {
             this.draw_frame();
             this.draw_polygonsp("pu_q");
             this.draw_polygonsp("pu_a");
-            this.draw_freeline("pu_q");
-            this.draw_freeline("pu_a");
             this.draw_line("pu_q");
             this.draw_line("pu_a");
             this.draw_lattice();
@@ -725,7 +739,6 @@ class Puzzle_square extends Puzzle {
             this.draw_wall("pu_q");
             this.draw_frame();
             this.draw_polygonsp("pu_q");
-            this.draw_freeline("pu_q");
             this.draw_line("pu_q");
             this.draw_direction("pu_q");
             this.draw_lattice();
@@ -736,6 +749,9 @@ class Puzzle_square extends Puzzle {
             this.draw_number("pu_q");
             this.draw_cursol();
             this.draw_freecircle();
+        }
+        if (this.mode[present_mode].edit_mode === "solution_area" || UserSettings.show_solution_area) {
+            this.draw_solution_area();
         }
     }
 
@@ -1185,6 +1201,91 @@ class Puzzle_square extends Puzzle {
         }
     }
 
+    findGCD(num1, num2) { // For usage below
+        while (num2 !== 0) {
+            let temp = num2;
+            num2 = num1 % num2;
+            num1 = temp;
+        }
+        return Math.abs(num1);
+    }
+
+    split_line(array, num) { 
+        var ret = [];
+        var points = [];
+        switch (array) {
+            case 'line':
+                var i1 = num.split(",")[0];
+                var i2 = num.split(",")[1];
+
+                var x1 = this.point[i1].index[0];
+                var x2 = this.point[i2].index[0];
+                var y1 = this.point[i1].index[1];
+                var y2 = this.point[i2].index[1];
+
+                var dx = x2 - x1;
+                var dy = y2 - y1;
+
+                if (dx === 0) {
+                    for (let i = 0; i <= dy; i++) {
+                        points.push(x1 + (y1 + i) * this.nx0);
+                    }
+                }
+                else if (dy === 0) {
+                    for (let i = 0; i <= dx; i++) {
+                        points.push(x1 + i + y1 * this.nx0);
+                    }
+                }
+                else {
+                    var gcd = this.findGCD(dx, dy);
+                    var sx = dx / gcd;
+                    var sy = dy / gcd;
+                    for (let i = 0; i <= gcd; i++) {
+                        points.push(x1 + i * sx + (y1 + i * sy) * this.nx0);
+                    }
+                }
+                
+                break;
+
+            case 'lineE':
+                var i1 = num.split(",")[0];
+                var i2 = num.split(",")[1];
+
+                var x1 = this.point[i1].index[0];
+                var x2 = this.point[i2].index[0];
+                var y1 = this.point[i1].index[1];
+                var y2 = this.point[i2].index[1];
+
+                var dx = x2 - x1;
+                var dy = y2 - y1;
+
+                if (dx === 0) {
+                    for (let i = 0; i <= dy; i++) {
+                        points.push(x1 + (y1 + i) * this.nx0 + this.nx0*this.ny0);
+                    }
+                }
+                else if (dy === 0) {
+                    for (let i = 0; i <= dx; i++) {
+                        points.push(x1 + i + y1 * this.nx0 + this.nx0*this.ny0);
+                    }
+                }
+                else {
+                    var gcd = this.findGCD(dx, dy);
+                    var sx = dx / gcd;
+                    var sy = dy / gcd;
+                    for (let i = 0; i <= gcd; i++) {
+                        points.push(x1 + i * sx + (y1 + i * sy) * this.nx0 + this.nx0*this.ny0);
+                    }
+                }
+
+                break;
+        }
+        for (let i = 0; i < points.length - 1; i++) {
+            ret.push(points[i] + "," + points[i+1]);
+        }
+        return  ret;
+    }
+
     draw_line(pu) {
         for (var i in this[pu].line) {
             if (this[pu].line[i] === 98) {
@@ -1291,57 +1392,6 @@ class Puzzle_square extends Puzzle {
         }
     }
 
-    draw_freeline(pu) {
-        /*freeline*/
-        for (var i in this[pu].freeline) {
-            set_line_style(this.ctx, this[pu].freeline[i]);
-            if (UserSettings.custom_colors_on && this[pu + "_col"].freeline[i]) {
-                this.ctx.strokeStyle = this[pu + "_col"].freeline[i];
-            }
-            var i1 = i.split(",")[0];
-            var i2 = i.split(",")[1];
-            this.ctx.beginPath();
-            if (this[pu].freeline[i] === 30) {
-                var r = 0.15 * this.size;
-                var dx = this.point[i1].x - this.point[i2].x;
-                var dy = this.point[i1].y - this.point[i2].y;
-                var d = Math.sqrt(dx ** 2 + dy ** 2);
-                this.ctx.moveTo(this.point[i1].x - r / d * dy, this.point[i1].y + r / d * dx);
-                this.ctx.lineTo(this.point[i2].x - r / d * dy, this.point[i2].y + r / d * dx);
-                this.ctx.stroke();
-                this.ctx.moveTo(this.point[i1].x + r / d * dy, this.point[i1].y - r / d * dx);
-                this.ctx.lineTo(this.point[i2].x + r / d * dy, this.point[i2].y - r / d * dx);
-            } else {
-                this.ctx.moveTo(this.point[i1].x, this.point[i1].y);
-                this.ctx.lineTo(this.point[i2].x, this.point[i2].y);
-            }
-            this.ctx.stroke();
-        }
-        for (var i in this[pu].freelineE) {
-            set_line_style(this.ctx, this[pu].freelineE[i]);
-            if (UserSettings.custom_colors_on && this[pu + "_col"].freelineE[i]) {
-                this.ctx.strokeStyle = this[pu + "_col"].freelineE[i];
-            }
-            var i1 = i.split(",")[0];
-            var i2 = i.split(",")[1];
-            this.ctx.beginPath();
-            if (this[pu].freelineE[i] === 30) {
-                var r = 0.15 * this.size;
-                var dx = this.point[i1].x - this.point[i2].x;
-                var dy = this.point[i1].y - this.point[i2].y;
-                var d = Math.sqrt(dx ** 2 + dy ** 2);
-                this.ctx.moveTo(this.point[i1].x - r / d * dy, this.point[i1].y + r / d * dx);
-                this.ctx.lineTo(this.point[i2].x - r / d * dy, this.point[i2].y + r / d * dx);
-                this.ctx.stroke();
-                this.ctx.moveTo(this.point[i1].x + r / d * dy, this.point[i1].y - r / d * dx);
-                this.ctx.lineTo(this.point[i2].x + r / d * dy, this.point[i2].y - r / d * dx);
-            } else {
-                this.ctx.moveTo(this.point[i1].x, this.point[i1].y);
-                this.ctx.lineTo(this.point[i2].x, this.point[i2].y);
-            }
-            this.ctx.stroke();
-        }
-    }
 
     draw_wall(pu) {
         for (var i in this[pu].wall) {
@@ -1461,6 +1511,23 @@ class Puzzle_square extends Puzzle {
             } else {
                 factor = 0;
             }
+
+            if (this[pu].number[i][3]) {
+                let dir = this[pu].number[i][3];
+                let angle = 0;
+                switch (dir) {
+                case 'U': angle = -Math.PI/2; break;
+                case 'D': angle = Math.PI/2; break;
+                case 'L': angle = Math.PI; break;
+                }
+                this.ctx.save();
+                this.ctx.translate(p_x, p_y);
+                this.ctx.rotate(angle);
+                this.ctx.translate(-p_x, -p_y);
+
+                // TODO: only rotate the number in arrow mode, not the arrow
+            }
+
             switch (this[pu].number[i][2]) {
                 case "1": //normal
                     set_font_style(this.ctx, 0.7 * this.size.toString(10), this[pu].number[i][1]);
@@ -1702,15 +1769,26 @@ class Puzzle_square extends Puzzle {
                     }
                     break;
                 case "8": //long
-                    if (this[pu].number[i][1] === 5) {
-                        set_font_style(this.ctx, 0.5 * this.size.toString(10), this[pu].number[i][1]);
-                        set_circle_style(this.ctx, 7);
-                        this.ctx.fillRect(p_x - 0.2 * this.size, p_y - 0.25 * this.size, this.ctx.measureText(this[pu].number[i][0]).width, 0.5 * this.size);
+                    {
+                        let number_data = this[pu].number[i];
+                        let lines = number_data[0].split('\n');
+                        for (let line of lines) {
+                            if (number_data[1] === 5) {
+                                set_font_style(this.ctx, 0.5 * this.size.toString(10), number_data[1]);
+                                set_circle_style(this.ctx, 7);
+                                this.ctx.fillRect(p_x - 0.2 * this.size, p_y - 0.25 * this.size, this.ctx.measureText(line).width, 0.5 * this.size);
+                            }
+                            set_font_style(this.ctx, 0.5 * this.size.toString(10), number_data[1]);
+                            this.ctx.textAlign = "left";
+                            this.ctx.text(line, p_x - 0.2 * this.size, p_y);
+                            p_y += this.size * 0.5;
+                        }
                     }
-                    set_font_style(this.ctx, 0.5 * this.size.toString(10), this[pu].number[i][1]);
-                    this.ctx.textAlign = "left";
-                    this.ctx.text(this[pu].number[i][0], p_x - 0.2 * this.size, p_y);
                     break;
+            }
+
+            if (this[pu].number[i][3]) {
+                this.ctx.restore();
             }
         }
 
@@ -1730,6 +1808,21 @@ class Puzzle_square extends Puzzle {
             }
             if (true) { //(this[pu].numberS[i][0].length <= 2 ){
                 if (this.point[i]) {
+                    
+                    if (this[pu].numberS[i][2]) {
+                        let dir = this[pu].numberS[i][2];
+                        let angle = 0;
+                        switch (dir) {
+                        case 'U': angle = -Math.PI/2; break;
+                        case 'D': angle = Math.PI/2; break;
+                        case 'L': angle = Math.PI; break;
+                        }
+                        this.ctx.save();
+                        this.ctx.translate(this.point[i].x, this.point[i].y);
+                        this.ctx.rotate(angle);
+                        this.ctx.translate(-this.point[i].x, -this.point[i].y);
+                    }
+
                     var [_, _, j] = this.point[i].index;
                     set_font_style(this.ctx, 0.32 * this.size.toString(10), this[pu].numberS[i][1]);
                     var n = parseInt(this[pu].numberS[i][0]);
@@ -1740,6 +1833,10 @@ class Puzzle_square extends Puzzle {
                     this.ctx.textAlign = "center";
                     this.ctx.text(this[pu].numberS[i][0], this.point[i].x, this.point[i].y + 0.03 * this.size, this.size * 0.48);
                     this.ctx.fillStyle = style;
+
+                    if (this[pu].numberS[i][2]) {
+                        this.ctx.restore();
+                    }
                 }
                 //}else{
                 //  set_font_style(this.ctx,0.28*this.size.toString(10),this[pu].numberS[i][1]);
@@ -4079,7 +4176,7 @@ class Puzzle_square extends Puzzle {
             }
         }
     }
-
+    
     rotate_theta(th) {
         th = (th + this.theta);
         if (this.reflect[0] === -1) { th = (180 - th + 360) % 360; }

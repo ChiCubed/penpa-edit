@@ -37,7 +37,7 @@ class Puzzle_hex extends Puzzle {
     create_point() {
         var k = 0;
         var n = this.nx * 3 + 1;
-        var adjacent, surround, type, use, neighbor;
+        var adjacent, surround, type, use, neighbor, edge_to_vertex;
         var point = [];
         const index = (x, y) => [x, y];
         //center
@@ -59,7 +59,8 @@ class Puzzle_hex extends Puzzle {
                 if (i === 0 || i === n - 1 || j === 0 || j === n - 1) { use = -1; } else { use = 1; }
                 adjacent = [k + n ** 2, k + n ** 2 + 1, k + n ** 2 + n + j % 2];
                 surround = [k - n ** 2, k - n ** 2 + n - 1 + j % 2, k - n ** 2 + n + j % 2];
-                point[k] = new Point(point[i + j * n].x, point[i + j * n].y + 2 / 3 * this.size * Math.sqrt(3) * 0.5, type, adjacent, surround, use);
+                edge_to_vertex = [k + 2 * n ** 2, k + 3 * n ** 2, k + 4 * n ** 2 + n - 1 + j % 2];
+                point[k] = new Point(point[i + j * n].x, point[i + j * n].y + 2 / 3 * this.size * Math.sqrt(3) * 0.5, type, adjacent, surround, use, [], [], 0, null, edge_to_vertex, 3);
                 k++;
             }
         }
@@ -68,7 +69,8 @@ class Puzzle_hex extends Puzzle {
                 if (i === 0 || i === n - 1 || j === 0 || j === n - 1) { use = -1; } else { use = 1; }
                 adjacent = [k - n ** 2 - n - (j + 1) % 2, k - n ** 2 - 1, k - n ** 2];
                 surround = [k - 2 * n ** 2 - 1, k - 2 * n ** 2, k - 2 * n ** 2 + n - 1 + j % 2];
-                point[k] = new Point(point[i + j * n].x - 0.5 * this.size, point[i + j * n].y + 1 / 3 * this.size * Math.sqrt(3) * 0.5, type, adjacent, surround, use);
+                edge_to_vertex = [k + n ** 2, k + 2 * n ** 2 - 1, k + 3 * n ** 2 - 1];
+                point[k] = new Point(point[i + j * n].x - 0.5 * this.size, point[i + j * n].y + 1 / 3 * this.size * Math.sqrt(3) * 0.5, type, adjacent, surround, use, [], [], 0, null, edge_to_vertex, 3);
                 k++;
             }
         }
@@ -80,7 +82,8 @@ class Puzzle_hex extends Puzzle {
                 adjacent = [k + n - 1 + j % 2, k - n + j % 2];
                 surround = [];
                 neighbor = [k - 3 * n ** 2, k - 3 * n ** 2 + n - 1 + j % 2];
-                point[k] = new Point(point[i + j * n].x - 0.25 * this.size, point[i + j * n].y + this.size * Math.sqrt(3) * 0.25, type, adjacent, surround, use, neighbor);
+                edge_to_vertex = [k - n ** 2, k - 2 * n ** 2];
+                point[k] = new Point(point[i + j * n].x - 0.25 * this.size, point[i + j * n].y + this.size * Math.sqrt(3) * 0.25, type, adjacent, surround, use, neighbor, [], 0, null, edge_to_vertex);
                 k++;
             }
         }
@@ -91,7 +94,8 @@ class Puzzle_hex extends Puzzle {
                 adjacent = [k + n + j % 2, k - n - 1 + j % 2];
                 surround = [];
                 neighbor = [k - 4 * n ** 2, k - 4 * n ** 2 + n + j % 2];
-                point[k] = new Point(point[i + j * n].x + 0.25 * this.size, point[i + j * n].y + this.size * Math.sqrt(3) * 0.25, type, adjacent, surround, use, neighbor);
+                edge_to_vertex = [k - 2 * n ** 2 + 1, k - 3 * n ** 2];
+                point[k] = new Point(point[i + j * n].x + 0.25 * this.size, point[i + j * n].y + this.size * Math.sqrt(3) * 0.25, type, adjacent, surround, use, neighbor, [], 0, null, edge_to_vertex);
                 k++;
             }
         }
@@ -102,7 +106,8 @@ class Puzzle_hex extends Puzzle {
                 adjacent = [k - 1, k + 1];
                 surround = [];
                 neighbor = [k - 5 * n ** 2, k - 5 * n ** 2 + 1];
-                point[k] = new Point(point[i + j * n].x + 0.5 * this.size, point[i + j * n].y, type, adjacent, surround, use, neighbor);
+                edge_to_vertex = [k - 3 * n ** 2 + 1, k - 4 * n ** 2 - n + j % 2];
+                point[k] = new Point(point[i + j * n].x + 0.5 * this.size, point[i + j * n].y, type, adjacent, surround, use, neighbor, [], 0, null, edge_to_vertex);
                 k++;
             }
         }
@@ -186,12 +191,23 @@ class Puzzle_hex extends Puzzle {
         this.make_frameline();
     }
 
+    cell_to_subnodes(cell) {
+        if (!this.point[cell] || this.point[cell].type !== 0) {
+            return [];
+        }
+
+        let first_side = 6 * (this.nx * 3 + 1) * (this.nx * 3 + 1) + 6 * cell;
+        let first_corner = 12 * (this.nx * 3 + 1) * (this.nx * 3 + 1) + 6 * cell;
+        return [first_side, first_side+1, first_side+2, first_side+3, first_side+4, first_side+5, first_corner, first_corner+1, first_corner+2, first_corner+3, first_corner+4, first_corner+5];
+    }
+
     type_set() {
         var type;
         switch (this.mode[this.mode.qa].edit_mode) {
             case "surface":
             case "multicolor":
             case "board":
+            case "solution_area":
                 type = [0];
                 break;
             case "symbol":
@@ -225,6 +241,8 @@ class Puzzle_hex extends Puzzle {
             case "lineE":
                 if (this.mode[this.mode.qa][this.mode[this.mode.qa].edit_mode][0] === "4") {
                     type = [2, 3, 4];
+                } else if (this.mode[this.mode.qa][this.mode[this.mode.qa].edit_mode][0] === "6") {
+                    type = [1, 2, 3, 4];
                 } else {
                     type = [1];
                 }
@@ -620,8 +638,6 @@ class Puzzle_hex extends Puzzle {
             this.draw_frame();
             this.draw_polygonsp("pu_q");
             this.draw_polygonsp("pu_a");
-            this.draw_freeline("pu_q");
-            this.draw_freeline("pu_a");
             this.draw_line("pu_q");
             this.draw_line("pu_a");
             this.draw_direction("pu_q");
@@ -647,7 +663,6 @@ class Puzzle_hex extends Puzzle {
             this.draw_wall("pu_q");
             this.draw_frame();
             this.draw_polygonsp("pu_q");
-            this.draw_freeline("pu_q");
             this.draw_line("pu_q");
             this.draw_direction("pu_q");
             this.draw_lattice();
@@ -657,6 +672,9 @@ class Puzzle_hex extends Puzzle {
             this.draw_number("pu_q");
             this.draw_cursol();
             this.draw_freecircle();
+        }
+        if (this.mode[present_mode].edit_mode === "solution_area" || UserSettings.show_solution_area) {
+            this.draw_solution_area();
         }
     }
 
@@ -942,58 +960,6 @@ class Puzzle_hex extends Puzzle {
                 }
                 this.ctx.stroke();
             }
-        }
-    }
-
-    draw_freeline(pu) {
-        /*freeline*/
-        for (var i in this[pu].freeline) {
-            set_line_style(this.ctx, this[pu].freeline[i]);
-            if (UserSettings.custom_colors_on && this[pu + "_col"].freeline[i]) {
-                this.ctx.strokeStyle = this[pu + "_col"].freeline[i];
-            }
-            var i1 = i.split(",")[0];
-            var i2 = i.split(",")[1];
-            this.ctx.beginPath();
-            if (this[pu].freeline[i] === 30) {
-                var r = 0.15 * this.size;
-                var dx = this.point[i1].x - this.point[i2].x;
-                var dy = this.point[i1].y - this.point[i2].y;
-                var d = Math.sqrt(dx ** 2 + dy ** 2);
-                this.ctx.moveTo(this.point[i1].x - r / d * dy, this.point[i1].y + r / d * dx);
-                this.ctx.lineTo(this.point[i2].x - r / d * dy, this.point[i2].y + r / d * dx);
-                this.ctx.stroke();
-                this.ctx.moveTo(this.point[i1].x + r / d * dy, this.point[i1].y - r / d * dx);
-                this.ctx.lineTo(this.point[i2].x + r / d * dy, this.point[i2].y - r / d * dx);
-            } else {
-                this.ctx.moveTo(this.point[i1].x, this.point[i1].y);
-                this.ctx.lineTo(this.point[i2].x, this.point[i2].y);
-            }
-            this.ctx.stroke();
-        }
-        for (var i in this[pu].freelineE) {
-            set_line_style(this.ctx, this[pu].freelineE[i]);
-            if (UserSettings.custom_colors_on && this[pu + "_col"].freelineE[i]) {
-                this.ctx.strokeStyle = this[pu + "_col"].freelineE[i];
-            }
-            var i1 = i.split(",")[0];
-            var i2 = i.split(",")[1];
-            this.ctx.beginPath();
-            if (this[pu].freelineE[i] === 30) {
-                var r = 0.15 * this.size;
-                var dx = this.point[i1].x - this.point[i2].x;
-                var dy = this.point[i1].y - this.point[i2].y;
-                var d = Math.sqrt(dx ** 2 + dy ** 2);
-                this.ctx.moveTo(this.point[i1].x - r / d * dy, this.point[i1].y + r / d * dx);
-                this.ctx.lineTo(this.point[i2].x - r / d * dy, this.point[i2].y + r / d * dx);
-                this.ctx.stroke();
-                this.ctx.moveTo(this.point[i1].x + r / d * dy, this.point[i1].y - r / d * dx);
-                this.ctx.lineTo(this.point[i2].x + r / d * dy, this.point[i2].y - r / d * dx);
-            } else {
-                this.ctx.moveTo(this.point[i1].x, this.point[i1].y);
-                this.ctx.lineTo(this.point[i2].x, this.point[i2].y);
-            }
-            this.ctx.stroke();
         }
     }
 
@@ -1343,14 +1309,23 @@ class Puzzle_hex extends Puzzle {
                     }
                     break;
                 case "8": //long
-                    if (this[pu].number[i][1] === 5) {
-                        set_font_style(this.ctx, 0.5 * this.size.toString(10), this[pu].number[i][1]);
-                        set_circle_style(this.ctx, 7);
-                        this.ctx.fillRect(this.point[i].x - 0.2 * this.size, this.point[i].y - 0.25 * this.size, this.ctx.measureText(this[pu].number[i][0]).width, 0.5 * this.size);
+                    {
+                        let number_data = this[pu].number[i];
+                        let lines = number_data[0].split('\n');
+                        let p_x = this.point[i].x;
+                        let p_y = this.point[i].y;
+                        for (let line of lines) {
+                            if (number_data[1] === 5) {
+                                set_font_style(this.ctx, 0.5 * this.size.toString(10), number_data[1]);
+                                set_circle_style(this.ctx, 7);
+                                this.ctx.fillRect(p_x - 0.2 * this.size, p_y - 0.25 * this.size, this.ctx.measureText(line).width, 0.5 * this.size);
+                            }
+                            set_font_style(this.ctx, 0.5 * this.size.toString(10), number_data[1]);
+                            this.ctx.textAlign = "left";
+                            this.ctx.text(line, p_x - 0.2 * this.size, p_y);
+                            p_y += this.size * 0.5;
+                        }
                     }
-                    set_font_style(this.ctx, 0.5 * this.size.toString(10), this[pu].number[i][1]);
-                    this.ctx.textAlign = "left";
-                    this.ctx.text(this[pu].number[i][0], this.point[i].x - 0.2 * this.size, this.point[i].y);
                     break;
             }
         }

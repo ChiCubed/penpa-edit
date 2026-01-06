@@ -939,7 +939,7 @@ onload = function() {
         if (fittype === 'flex') {
             if ((edit_mode === "combi" && improve_modes.includes(pu.mode[pu.mode.qa][edit_mode][0])) ||
                 edit_mode === "sudoku" || edit_mode === "number")
-                pu.type = [0];
+                type = [0];
         }
 
         for (var i = 0; i < pu.point.length; i++) {
@@ -950,13 +950,6 @@ onload = function() {
                     num = i;
                 }
             }
-        }
-
-        // resetting the type for starbattle composite mode
-        if (fittype === 'flex') {
-            if ((edit_mode === "combi" && improve_modes.includes(pu.mode[pu.mode.qa][edit_mode][0])) ||
-                edit_mode === "sudoku" || edit_mode === "number")
-                pu.type = type;
         }
 
         //const endTime = performance.now();
@@ -1068,7 +1061,7 @@ onload = function() {
 
     function window_click(e) {
         let eventTarget = e.target;
-        if (eventTarget.classList.contains('fa')) {
+        if (eventTarget.classList.contains('fa') || eventTarget.classList.contains('rotate')) {
             eventTarget = eventTarget.parentElement;
         }
 
@@ -1373,34 +1366,21 @@ onload = function() {
             case "rt_addtop":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('t');
-                if (pu.gridtype === "square") {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" || pu.gridtype === "kakuro" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_bottom(1); // rotated by 180
+                            pu.resize_bottom(1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_left(1); // rotated by 90
+                            pu.resize_left(1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_top(1); // original
+                            pu.resize_top(1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_right(1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku" || (pu.gridtype === "kakuro")) {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_bottom(1, 'white');
-                            break;
-                        case 1:
-                            pu.resize_left(1, 'white');
-                            break;
-                        case 2:
-                            pu.resize_top(1, 'white');
-                            break;
-                        case 3:
-                            pu.resize_right(1, 'white');
+                            pu.resize_right(1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1410,34 +1390,21 @@ onload = function() {
             case "rt_addbottom":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('b');
-                if (pu.gridtype === "square" || (pu.gridtype === "kakuro")) {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_top(1); // rotated by 180
+                            pu.resize_top(1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_right(1); // rotated by 90
+                            pu.resize_right(1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_bottom(1); // original
+                            pu.resize_bottom(1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_left(1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku") {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_top(1, 'white'); // rotated by 180
-                            break;
-                        case 1:
-                            pu.resize_right(1, 'white'); // rotated by 90
-                            break;
-                        case 2:
-                            pu.resize_bottom(1, 'white'); // original
-                            break;
-                        case 3:
-                            pu.resize_left(1, 'white'); // rotated by 270
+                            pu.resize_left(1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1447,34 +1414,21 @@ onload = function() {
             case "rt_addleft":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('l');
-                if (pu.gridtype === "square") {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" || pu.gridtype === "kakuro" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_right(1); // rotated by 180
+                            pu.resize_right(1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_bottom(1); // rotated by 90
+                            pu.resize_bottom(1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_left(1); // original
+                            pu.resize_left(1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_top(1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku" || (pu.gridtype === "kakuro")) {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_right(1, 'white');
-                            break;
-                        case 1:
-                            pu.resize_bottom(1, 'white');
-                            break;
-                        case 2:
-                            pu.resize_left(1, 'white');
-                            break;
-                        case 3:
-                            pu.resize_top(1, 'white');
+                            pu.resize_top(1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1484,34 +1438,21 @@ onload = function() {
             case "rt_addright":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('r');
-                if (pu.gridtype === "square" || (pu.gridtype === "kakuro")) {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_left(1); // rotated by 180
+                            pu.resize_left(1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_top(1); // rotated by 90
+                            pu.resize_top(1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_right(1); // original
+                            pu.resize_right(1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_bottom(1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku") {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_left(1, 'white'); // rotated by 180
-                            break;
-                        case 1:
-                            pu.resize_top(1, 'white'); // rotated by 90
-                            break;
-                        case 2:
-                            pu.resize_right(1, 'white'); // original
-                            break;
-                        case 3:
-                            pu.resize_bottom(1, 'white'); // rotated by 270
+                            pu.resize_bottom(1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1521,34 +1462,21 @@ onload = function() {
             case "rt_subtop":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('t');
-                if (pu.gridtype === "square") {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" || pu.gridtype === "kakuro" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_bottom(-1); // rotated by 180
+                            pu.resize_bottom(-1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_left(-1); // rotated by 90
+                            pu.resize_left(-1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_top(-1); // original
+                            pu.resize_top(-1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_right(-1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku" || (pu.gridtype === "kakuro")) {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_bottom(-1, 'white');
-                            break;
-                        case 1:
-                            pu.resize_left(-1, 'white');
-                            break;
-                        case 2:
-                            pu.resize_top(-1, 'white');
-                            break;
-                        case 3:
-                            pu.resize_right(-1, 'white');
+                            pu.resize_right(-1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1558,34 +1486,21 @@ onload = function() {
             case "rt_subbottom":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('b');
-                if (pu.gridtype === "square" || (pu.gridtype === "kakuro")) {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" ? 'white' : 'black';
+
                     switch (orientation) {
                         case 0:
-                            pu.resize_top(-1); // rotated by 180
+                            pu.resize_top(-1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_right(-1); // rotated by 90
+                            pu.resize_right(-1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_bottom(-1); // original
+                            pu.resize_bottom(-1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_left(-1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku") {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_top(-1, 'white'); // rotated by 180
-                            break;
-                        case 1:
-                            pu.resize_right(-1, 'white'); // rotated by 90
-                            break;
-                        case 2:
-                            pu.resize_bottom(-1, 'white'); // original
-                            break;
-                        case 3:
-                            pu.resize_left(-1, 'white'); // rotated by 270
+                            pu.resize_left(-1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1595,34 +1510,21 @@ onload = function() {
             case "rt_subleft":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('l');
-                if (pu.gridtype === "square") {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" || pu.gridtype === "kakuro" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_right(-1); // rotated by 180
+                            pu.resize_right(-1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_bottom(-1); // rotated by 90
+                            pu.resize_bottom(-1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_left(-1); // original
+                            pu.resize_left(-1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_top(-1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku" || (pu.gridtype === "kakuro")) {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_right(-1, 'white');
-                            break;
-                        case 1:
-                            pu.resize_bottom(-1, 'white');
-                            break;
-                        case 2:
-                            pu.resize_left(-1, 'white');
-                            break;
-                        case 3:
-                            pu.resize_top(-1, 'white');
+                            pu.resize_top(-1, celltype); // rotated by 270
                             break;
                     }
                 }
@@ -1632,70 +1534,61 @@ onload = function() {
             case "rt_subright":
                 // To handle Rotation and Reflection
                 orientation = pu.get_orientation('r');
-                if (pu.gridtype === "square" || (pu.gridtype === "kakuro")) {
+                if (pu.grid_is_square()) {
+                    let celltype = UserSettings.resize_whitespace || pu.gridtype === "sudoku" ? 'white' : 'black';
+                        
                     switch (orientation) {
                         case 0:
-                            pu.resize_left(-1); // rotated by 180
+                            pu.resize_left(-1, celltype); // rotated by 180
                             break;
                         case 1:
-                            pu.resize_top(-1); // rotated by 90
+                            pu.resize_top(-1, celltype); // rotated by 90
                             break;
                         case 2:
-                            pu.resize_right(-1); // original
+                            pu.resize_right(-1, celltype); // original
                             break;
                         case 3:
-                            pu.resize_bottom(-1); // rotated by 270
-                            break;
-                    }
-                } else if (pu.gridtype === "sudoku") {
-                    switch (orientation) {
-                        case 0:
-                            pu.resize_left(-1, 'white'); // rotated by 180
-                            break;
-                        case 1:
-                            pu.resize_top(-1, 'white'); // rotated by 90
-                            break;
-                        case 2:
-                            pu.resize_right(-1, 'white'); // original
-                            break;
-                        case 3:
-                            pu.resize_bottom(-1, 'white'); // rotated by 270
+                            pu.resize_bottom(-1, celltype); // rotated by 270
                             break;
                     }
                 }
                 // pu.rotate_size(); // fit board to window
                 e.preventDefault();
                 break;
+            case "resize_whitespace_button":
+                UserSettings.resize_whitespace = !UserSettings.resize_whitespace;
+                e.preventDefault();
+                break;
             case "rt_addtop_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_top(1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_top(1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_addbottom_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_bottom(1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_bottom(1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_addleft_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_left(1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_left(1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_addright_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_right(1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_right(1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_subtop_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_top(-1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_top(-1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_subbottom_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_bottom(-1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_bottom(-1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_subleft_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_left(-1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_left(-1, 'white'); }
                 e.preventDefault();
                 break;
             case "rt_subright_r":
-                if ((pu.gridtype === "square") || (pu.gridtype === "sudoku") || (pu.gridtype === "kakuro")) { pu.resize_right(-1, 'white'); }
+                if (pu.grid_is_square()) { pu.resize_right(-1, 'white'); }
                 e.preventDefault();
                 break;
             case "closeBtn_rotate1":
@@ -1800,6 +1693,14 @@ onload = function() {
                 break;
             case "visibility_button":
                 UserSettings.show_solution = !UserSettings.show_solution;
+                e.preventDefault();
+                break;
+            case "view_solution_area_button":
+                UserSettings.show_solution_area = !UserSettings.show_solution_area;
+                e.preventDefault();
+                break;
+            case "inclusive_solution_area_button":
+                pu.inclusive_solution_area = !pu.inclusive_solution_area;
                 e.preventDefault();
                 break;
             case "pu_q_label":
@@ -1951,6 +1852,10 @@ onload = function() {
         } else if (e.target.id.slice(0, 3) === "st_") { // Style mode
             pu.stylemode_check(e.target.id.slice(0, -3));
             e.preventDefault();
+        }
+        // Number orientation
+        if (eventTarget.id.slice(0, 4) === "rot_") {
+            pu.set_orientation(eventTarget.id.slice(4, -3));
         }
         // Combination mode
         if (eventTarget.id.slice(0, 9) === "combisub_") {
