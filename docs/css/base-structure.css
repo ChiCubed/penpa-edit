@@ -1581,6 +1581,11 @@ sup {
     margin-top: 20px;
 }
 
+#app-container.sticky-mode #tool-container {
+    position: sticky;
+    top: 1.5em;
+}
+
 @media (min-width: 850px) {
     #app-container.responsive {
         display: grid;

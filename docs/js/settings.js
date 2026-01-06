@@ -35,9 +35,11 @@ const UserSettings = {
         let verb = (modeInt === 2 || modeInt === 3) ? 'add' : 'remove';
         let flipVerb = (modeInt === 3) ? 'add' : 'remove';
         let streamVerb = (modeInt === 4) ? 'add' : 'remove';
+        let stickyVerb = (modeInt === 5) ? 'add' : 'remove';
         document.getElementById("app-container").classList[verb]("responsive");
         document.getElementById("app-container").classList[flipVerb]("responsive-flip");
         document.getElementById("app-container").classList[streamVerb]("streaming-mode");
+        document.getElementById("app-container").classList[stickyVerb]("sticky-mode");
         document.getElementById("responsive_settings_opt").value = modeInt;
 
         // Handle Cookie dynamically (This is to allow Solver Mode also save this setting)
