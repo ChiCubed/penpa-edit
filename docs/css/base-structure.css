@@ -1581,6 +1581,8 @@ sup {
     margin-top: 20px;
 }
 
+/* sticky tools */
+#app-container.streaming-mode #tool-container,
 #app-container.sticky-mode #tool-container {
     position: sticky;
     top: 1.5em;
