@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>crispEdge test</title>
+<script type="text/javascript" src="../dist/candle.js"></script>
+<script type="text/javascript">
+//import Candle from '../dist/candle.module.js';
+//import Candle from '../src/candle.core.js';
+
+function onload_func(){
+	console.log(Candle.version);
+	Candle.start(svg_auto, 'svg', function(g){ vml_draw(g,'auto');});
+	Candle.start(svg_edge, 'svg', function(g){ vml_draw(g,'crispEdges');});
+	Candle.start(cv_auto, 'canvas', function(g){ vml_draw(g,'auto');})
+	Candle.start(cv_edge, 'canvas', function(g){ vml_draw(g,'crispEdges');})
+}
+window.Candle = Candle;
+window.onload_func = onload_func;
+
+function vml_draw(g, rendering){
+	g.changeSize(200,50);
+	g.setRendering(rendering);
+
+	g.strokeStyle = "black";
+	g.fillStyle = "navy";
+
+	g.lineWidth = 1;
+	g.strokeDashedLine(5, 5,75, 5, [4]);
+	g.fillRect(105,4,70,1);
+
+	g.lineWidth = 2;
+	g.strokeLine(5,15,75,15);
+	g.fillRect(105,14,70,2);
+
+	g.lineWidth = 3;
+	g.strokeLine(5,25,75,25);
+	g.fillRect(105,23,70,3);
+
+	g.lineWidth = 4;
+	g.strokeLine(5,35,75,35);
+	g.fillRect(105,33,70,4);
+}
+</script>
+<style>
+	div.container { float:left; margin-right:8pt;}
+	div.canvas    { display:inline-block; background-color:#efefef; border:solid 1px gray;}
+</style>
+</head>
+<body onload="javascript:onload_func();">
+ <h1 id="h1title">crispEdge test</h1>
+ <div class="container">
+  SVG auto
+  <div class="canvas" id="svg_auto"></div>
+ </div>
+ <div class="container">
+  canvas auto
+  <div class="canvas" id="cv_auto"></div>
+ </div>
+
+ <div class="container" style="clear:both;">
+  SVG crispEdges
+  <div class="canvas" id="svg_edge"></div>
+ </div>
+ <div class="container">
+  canvas crispEdges
+  <div class="canvas" id="cv_edge"></div>
+ </div>
+</body>
+</html>

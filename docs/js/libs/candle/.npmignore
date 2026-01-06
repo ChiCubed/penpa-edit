@@ -1,0 +1,16 @@
+.git*
+.hg*
+.DS_Store
+
+/.vscode
+/Gruntfile.js
+/doc
+/src
+/test
+*.concat.js
+
+.jshintrc
+.eslintrc.json
+.eslintcache
+/sample
+yarn.lock
