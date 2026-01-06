@@ -97,8 +97,6 @@
 //     const solution = JSON.parse(pu.solution);
 //     const solution_area = pu.solution_area;
 
-//     // TODO: centerlist tracking
-
 //     // load new url
 //     import_url(url);
 
@@ -114,11 +112,8 @@
 //     pu.resize_right(nx - pu.nx);
 
 //     mergeDeep(pu, {pu_q: pu_q, pu_q_col: pu_q_col});
-    
-//     // TODO: check the rule strings are equal and all that jazz
 
 //     pu.centerlist.push(...centerlist);
-//     // TODO: dedup this stuff.
 
 //     pu.make_frameline();
 

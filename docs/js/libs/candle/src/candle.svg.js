@@ -473,8 +473,7 @@ class SVGWrapper extends WrapperBase {
 
 	/* Canvas API functions (for text) */
 	fillText(text,x,y,maxLength){
-		// TODO
-		// turn off max length, since text is getting stretched
+		// turns off max length, since text is getting stretched (TODO?)
 		maxLength = '';
 
 		let vid = this.reify_vid_text();

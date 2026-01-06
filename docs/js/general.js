@@ -34,8 +34,6 @@ function boot() {
     obj.appendChild(canvasHolder);
     canvasHolder.id = 'canvas-holder';
     Candle.start(canvasHolder, 'svg', function(ctx) {
-        // TODO: race condition here with loading this vs later stuff, maybe?
-        // look into it
         ctx.child.id = 'canvas';
         if (ctx.use.svg) {
             ctx.child.setAttribute('pointer-events', 'bounding-box');

@@ -104,10 +104,9 @@ class Puzzle {
         this.canvas = this.ctx.child;
         this.obj = document.getElementById("dvique");
 
-        // TODO
-        // if (this.ctx.use.svg) {
-        //     this.resol = 1;
-        // }
+        if (this.ctx.use.svg) {
+            this.resol = 1;
+        }
 
         // Background image properties
         this.bg_image = null;
@@ -1253,7 +1252,6 @@ class Puzzle {
         this.obj.style.height = this.canvas.style.height;
     }
 
-    // TODO
     resizecanvas() {
         var resizedCanvas = document.createElement("canvas");
         var resizedContext = resizedCanvas.getContext("2d");
@@ -8441,8 +8439,6 @@ class Puzzle {
                 }
             }
         } else if (this.mode[this.mode.qa].edit_mode === "symbol") {
-            // TODO: function for updating value of symbol,
-            // which removes old layer if necessary and all that stuff.
             this.rd_remove('symbol', this.cursol, UserSettings.custom_colors_on);
         } else if (this.mode[this.mode.qa].edit_mode === "sudoku") {
             if (this.selection.length === 1) {
@@ -12498,7 +12494,6 @@ class Puzzle {
             return;
         }
 
-        // TODO: work out when you do want to do a strong clear
         this.ctx.clear(false);
     }
 

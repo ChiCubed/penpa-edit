@@ -1316,7 +1316,6 @@ class Puzzle_square extends Puzzle {
         return  ret;
     }
 
-    // TODO: make these all use groups
     draw_line(pu, i = '') {
         this.ctx.setLayer('line_' + pu);
         const keys = i ? [i] : Object.keys(this[pu].line);
