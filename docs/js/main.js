@@ -926,10 +926,8 @@ onload = function() {
     }
 
     function coord_point(e, fittype = 'none', eventmode = 'none') {
-        var x = e.pageX - canvas.offsetLeft;
-        var y = e.pageY - canvas.offsetTop;
-        var min0, min = 10e6;
-        var num = 0;
+        var x = e.pageX - pu.canvas.parentElement.offsetLeft;
+        var y = e.pageY - pu.canvas.parentElement.offsetTop;
         var improve_modes = ["star", "yajilin", "mines", "doublemines", "akari"];
         let edit_mode = pu.mode[pu.mode.qa].edit_mode;
 
@@ -942,14 +940,21 @@ onload = function() {
                 type = [0];
         }
 
-        for (var i = 0; i < pu.point.length; i++) {
-            if (pu.point[i] && type.indexOf(pu.point[i].type) != -1) {
-                min0 = (x - pu.point[i].x) ** 2 + (y - pu.point[i].y) ** 2;
-                if (min0 < min) {
-                    min = min0;
-                    num = i;
+        let num = 0;
+        if (pu.grid_is_square()) {
+            num = pu.coord_p_core(x, y, type).num;
+        } else {
+            let min0, min = 1e18;
+            test = (i) => {
+                if (pu.point[i] && type.indexOf(pu.point[i].type) != -1) {
+                    min0 = (x - pu.point[i].x) ** 2 + (y - pu.point[i].y) ** 2;
+                    if (min0 < min) {
+                        min = min0;
+                        num = i;
+                    }
                 }
-            }
+            };
+            for (var i = 0; i < pu.point.length; i++) test(i);
         }
 
         //const endTime = performance.now();
@@ -1098,6 +1103,7 @@ onload = function() {
             case "canvas":
                 document.getElementById("inputtext").blur(); // Remove focus from text box
                 onDown(e);
+                if (UserSettings.mousemiddle_button !== 2 && e.button === 1) break; // ignore mmb if unhandled
                 if (checkms === 0) {
                     e.preventDefault();
                 }

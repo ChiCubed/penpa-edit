@@ -35,4 +35,28 @@
             else this.lineTo(x, y);
         }
     };
+
+    // from candle
+    target.prototype.shape = function() {
+        this.fill();
+        this.stroke();
+    }
+	target.prototype.fillCircle = function(cx,cy,r){
+        this.beginPath();
+        this.arc(cx,cy,r,0,2 * Math.PI,false);
+        this.fill();
+	}
+	target.prototype.strokeCircle = function(cx,cy,r){
+        this.beginPath();
+        this.arc(cx,cy,r,0,2 * Math.PI,false);
+        this.stroke();
+	}
+	target.prototype.shapeCircle = function(cx,cy,r){
+        this.beginPath();
+        this.arc(cx,cy,r,0,2 * Math.PI,false);
+        if(!!this.fillStyle   && this.fillStyle  !=="none"){ this.fill();}
+        if(!!this.strokeStyle && this.strokeStyle!=="none"){ this.stroke();}
+	}
+
+    target.prototype._step_vid = function() {}
 })(CanvasRenderingContext2D);

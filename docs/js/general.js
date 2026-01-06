@@ -18,9 +18,36 @@ function infoMsg(html) {
 
 function boot() {
     var obj = document.getElementById("dvique");
-    var canvas = document.createElement("canvas");
-    canvas.id = "canvas";
-    obj.appendChild(canvas);
+
+    // whatever
+    var pauseCanvasHolder = document.createElement('div');
+    obj.appendChild(pauseCanvasHolder);
+    pauseCanvasHolder.id = 'pause_canvas-holder';
+    pauseCanvasHolder.style.position = 'absolute';
+    pauseCanvasHolder.style.pointerEvents = 'none';
+    Candle.start(pauseCanvasHolder, 'svg', function(ctx) {
+        ctx.child.id = 'pause_canvas';
+        ctx.child.style.display = 'none';
+    });
+
+    var canvasHolder = document.createElement('div');
+    obj.appendChild(canvasHolder);
+    canvasHolder.id = 'canvas-holder';
+    Candle.start(canvasHolder, 'svg', function(ctx) {
+        // TODO: race condition here with loading this vs later stuff, maybe?
+        // look into it
+        ctx.child.id = 'canvas';
+        if (ctx.use.svg) {
+            ctx.child.setAttribute('pointer-events', 'bounding-box');
+            var style = document.createElement('style');
+            style.textContent = `
+                #canvas * {
+                    pointer-events: none;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    });
     boot_parameters();
     init_genre_tags();
     set_answer_setting_table_to("and");
@@ -399,7 +426,7 @@ function set_display_labels(gridtype) {
 function make_class(gridtype, loadtype = 'new') {
     var size = UserSettings.displaysize;
     var gridmax = {
-        'square': 100,
+        'square': 1000,
         'hex': 20,
         'tri': 20,
         'pyramid': 20,
@@ -1792,16 +1819,16 @@ function import_url(urlstring) {
     if (urlstring !== "") {
         if (urlstring.indexOf("/penpa-edit/") !== -1) {
 
-            let param = urlstring.split('&');
-            let paramArray = [];
+            let paramString = urlstring.split('&');
+            let params = {};
 
             // Decompose address into elements
-            for (var i = 0; i < param.length; i++) {
-                let paramItem = param[i].split('=');
-                paramArray[paramItem[0]] = paramItem[1];
+            for (var i = 0; i < paramString.length; i++) {
+                let paramItem = paramString[i].split('=');
+                params[paramItem[0]] = paramItem[1];
             }
 
-            let hash = "penpa_" + md5(paramArray.p);
+            let hash = "penpa_" + md5(params.p);
 
             // Decrypt puzzle data
             let local_data;
@@ -1817,7 +1844,7 @@ function import_url(urlstring) {
                 } else {
                     url = local_data.split('?')[1];
                 }
-                load(url, type = 'localstorage', origurl = paramArray.p);
+                load(url, type = 'localstorage', origurl = params.p);
             } else {
                 if (urlstring.includes("#")) {
                     urlstring = urlstring.split("/penpa-edit/#")[1];

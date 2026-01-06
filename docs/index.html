@@ -89,9 +89,10 @@
             "./js/libs/vanillaSelectBox.js",
             "./js/libs/zlib.js",
             "./js/libs/spectrum.js",
-            "./js/libs/canvas2svg.js",
+            "./js/libs/canvas2svg.js", // TODO make obsolete
             "./js/libs/select2.full.js",
-            "./js/libs/gif.js"
+            "./js/libs/gif.js",
+            "./js/libs/candle/dist/candle.js"
         ];
         for (let i = 0; i < library_sources.length; i++) {
             let script = document.createElement("script");
@@ -749,7 +750,7 @@
                 <div><label id="solution_check" class="info" /></label></div>
             </div>
             <div id="dvique" class="dvique">
-                <canvas id="pause_canvas" style="display:none;"></canvas>
+                <!-- <canvas id="pause_canvas" style="display:none;"></canvas> -->
             </div>
             <div id="contestinfo">
                 <div><label id="answer_key" class="info" /></label>
@@ -1485,7 +1486,7 @@
             </div>
             <div class="nb_button">
                 <input type="button" id="load_url" value="Load URL" onclick="import_url();" />
-<input type="button" value="Load Rorschach's River" onclick="import_url(rorschach)" />
+                <input type="button" value="Load Rorschach's River" onclick="import_url(rorschach)" />
             </div>
         </div>
     </div>
