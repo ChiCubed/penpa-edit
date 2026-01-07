@@ -819,7 +819,7 @@ body textarea {
 }
 
 #float-key {
-    position: absolute;
+    position: fixed;
     display: none;
     z-index: 1;
     left: 300px;
@@ -1582,6 +1582,7 @@ sup {
 }
 
 /* sticky tools */
+#app-container.responsive #tool-holder,
 #app-container.streaming-mode #tool-container,
 #app-container.sticky-mode #tool-container {
     position: sticky;
