@@ -51,6 +51,10 @@ function boot() {
     set_answer_setting_table_to("and");
 
     var urlParam = location.search.substring(1);
+    // load rorschach at ?rorschach
+    if (urlParam === 'rorschach') {
+        urlParam = rorschach.split("/penpa-edit/#")[1];
+    }
     if (!urlParam && location.hash) {
         urlParam = location.hash.substring(1);
     }
