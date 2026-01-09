@@ -319,7 +319,7 @@ class Puzzle_square extends Puzzle {
         let min = 1e18;
         let num = 0;
         const test = (i) => {
-            if (this.point[i] && type.indexOf(this.point[i].type) != -1) {
+            if (type.includes(this.point[i]?.type)) {
                 let v = (x - this.point[i].x) ** 2 + (y - this.point[i].y) ** 2;
                 if (v < min) {
                     min = v;
@@ -330,7 +330,7 @@ class Puzzle_square extends Puzzle {
 
         let tl = this.point[0];
         let ux = (x - tl.x) / this.size;
-        let uy = (y - tl.y) / this.size
+        let uy = (y - tl.y) / this.size;
 
         let i = Math.round(ux) + this.nx0 * Math.round(uy);
         let base_test = [i];
@@ -346,7 +346,9 @@ class Puzzle_square extends Puzzle {
         for (let i of base_test) {
             for (let t of type) {
                 for (let k = offset[t]; k < offset[t + 1]; ++k) {
-                    test(i + k * stride);
+                    for (let j = 0; j < type_sizes[t]; ++j) {
+                        test(i * type_sizes[t] + j + k * stride);
+                    }
                 }
             }
         }
