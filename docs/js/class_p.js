@@ -6778,6 +6778,7 @@ class Puzzle {
                             if (a_col) {
                                 this.pu_q_col.command_redo.push([a_col[0], a_col[1], this[pu_mode + "_col"][a_col[0]].pop(), pu_mode + "_col"]);
                             }
+                            this.redraw();
                         }
                     } else if (a[0] === "killercages" && a[1] === -1) {
                         if (this[pu_mode][a[0]].length > 0) {
@@ -6785,6 +6786,7 @@ class Puzzle {
                             if (a_col) {
                                 this.pu_q_col.command_redo.push([a_col[0], a_col[1], this[pu_mode + "_col"][a_col[0]].pop(), pu_mode + "_col", a_col[4]]);
                             }
+                            this.redraw();
                         }
                     } else if (a[0] === "move") { //a[0]:move a[1]:point_from a[2]:point_to
                         for (var i in a[1]) {
@@ -6801,6 +6803,7 @@ class Puzzle {
                         if (a_col) {
                             this.pu_q_col.command_redo.push([a_col[0], a_col[1], a_col[2], pu_mode + "_col"]);
                         }
+                        this.redraw();
                     } else {
                         if (a[4]) {
                             if (this[pu_mode][a[0]][a[1]]) { //symbol etc
@@ -6827,6 +6830,8 @@ class Puzzle {
                                 }
                             }
                         }
+
+                        const old_value = this[pu_mode][a[0]][a[1]];
                         if (a[2]) {
                             this[pu_mode][a[0]][a[1]] = JSON.parse(a[2]); //JSON.parse with decode
                             if (a_col) {
@@ -6842,10 +6847,10 @@ class Puzzle {
                                 delete this[pu_mode + "_col"][a_col[0]][a_col[1]];
                             }
                         }
+                        this.rd_single(a[0], a[1], old_value) || this.redraw();
                     }
                 }
             }
-            this.redraw();
         } else {
             while (undocounter !== 0) {
                 var a = this.pu_a.command_undo.pop(); /*a[0]:list_name,a[1]:point_number,a[2]:value, a[4]: groupindex (optional)*/
@@ -6899,6 +6904,7 @@ class Puzzle {
                             if (a_col) {
                                 this.pu_a_col.command_redo.push([a_col[0], a_col[1], this[pu_mode + "_col"][a_col[0]].pop(), pu_mode + "_col"].concat(a_4));
                             }
+                            this.redraw();
                         }
                     } else if (a[0] === "move") { //a[0]:move a[1]:point_from a[2]:point_to
                         for (var i in a[1]) {
@@ -6915,6 +6921,7 @@ class Puzzle {
                         if (a_col) {
                             this.pu_a_col.command_redo.push([a_col[0], a_col[1], a_col[2], pu_mode + "_col"].concat(a_4));
                         }
+                        this.redraw();
                     } else {
                         if (a[0] === "deletelineE") {
                             pu_mode = "pu_q";
@@ -6930,6 +6937,8 @@ class Puzzle {
                                 this.pu_a_col.command_redo.push([a_col[0], a_col[1], null, pu_mode + "_col"].concat(a_4));
                             }
                         }
+
+                        const old_value = this[pu_mode][a[0]][a[1]];
 
                         if (a[2]) {
                             this[pu_mode][a[0]][a[1]] = JSON.parse(a[2]); //JSON.parse with decode
@@ -6948,6 +6957,8 @@ class Puzzle {
                                 delete this[pu_mode + "_col"][a_col[0]][a_col[1]];
                             }
                         }
+
+                        (pu_mode === this.mode.qa && this.rd_single(a[0], a[1], old_value)) || this.redraw();
                     }
 
                     if (!replay) {
@@ -6967,7 +6978,6 @@ class Puzzle {
                     }
                 }
             }
-            this.redraw();
         }
     }
 
@@ -7014,6 +7024,7 @@ class Puzzle {
                             this.pu_q_col.command_undo.push([a_col[0], a_col[1], null, pu_mode + "_col"]);
                             this[pu_mode + "_col"][a_col[0]].push(a_col[2]);
                         }
+                        this.redraw();
                     } else if (a[0] === "killercages" && a[1] === -1) {
                         this.pu_q.command_undo.push([a[0], a[1], null, pu_mode, a[4]]);
                         this[pu_mode][a[0]].push(a[2]);
@@ -7021,6 +7032,7 @@ class Puzzle {
                             this.pu_q_col.command_undo.push([a_col[0], a_col[1], null, pu_mode + "_col", a_col[4]]);
                             this[pu_mode + "_col"][a_col[0]].push(a_col[2]);
                         }
+                        this.redraw();
                     } else if (a[0] === "move") { //a[0]:move a[1]:point_from a[2]:point_to
                         for (var i in a[1]) {
                             if (a[1][i] != a[2]) {
@@ -7036,6 +7048,7 @@ class Puzzle {
                         if (a_col) {
                             this.pu_q_col.command_undo.push([a_col[0], a_col[1], a_col[2], pu_mode + "_col"]);
                         }
+                        this.redraw();
                     } else {
                         if (a[4]) {
                             if (this[pu_mode][a[0]][a[1]]) {
@@ -7062,6 +7075,8 @@ class Puzzle {
                                 }
                             }
                         }
+
+                        const old_value = this[pu_mode][a[0]][a[1]];
                         if (a[2]) {
                             this[pu_mode][a[0]][a[1]] = a[2];
                             if (a_col) {
@@ -7073,10 +7088,10 @@ class Puzzle {
                                 delete this[pu_mode + "_col"][a_col[0]][a_col[1]];
                             }
                         }
+                        this.rd_single(a[0], a[1], old_value) || this.redraw();
                     }
                 }
             }
-            this.redraw();
         } else {
             while (redocounter !== 0) {
                 var a = this.pu_a.command_redo.pop();
@@ -7127,6 +7142,7 @@ class Puzzle {
                             this.pu_a_col.command_undo.push([a_col[0], a_col[1], null, pu_mode + "_col"].concat(a_4));
                             this[pu_mode + "_col"][a_col[0]].push(a_col[2]);
                         }
+                        this.redraw();
                     } else if (a[0] === "move") { //a[0]:move a[1]:point_from a[2]:point_to
                         for (var i in a[1]) {
                             if (a[1][i] != a[2]) {
@@ -7142,6 +7158,7 @@ class Puzzle {
                         if (a_col) {
                             this.pu_a_col.command_undo.push([a_col[0], a_col[1], a_col[2], pu_mode + "_col"].concat(a_4));
                         }
+                        this.redraw();
                     } else {
                         if (a[0] === "deletelineE") {
                             pu_mode = "pu_q";
@@ -7157,6 +7174,8 @@ class Puzzle {
                                 this.pu_a_col.command_undo.push([a_col[0], a_col[1], null, pu_mode + "_col"].concat(a_4));
                             }
                         }
+
+                        const old_value = this[pu_mode][a[0]][a[1]];
                         if (a[2]) {
                             this[pu_mode][a[0]][a[1]] = a[2];
                             if (a_col) {
@@ -7168,6 +7187,7 @@ class Puzzle {
                                 delete this[pu_mode + "_col"][a_col[0]][a_col[1]];
                             }
                         }
+                        (pu_mode === this.mode.qa && this.rd_single(a[0], a[1], old_value)) || this.redraw();
                     }
 
                     if (!replay) {
@@ -7187,7 +7207,6 @@ class Puzzle {
                     }
                 }
             }
-            this.redraw();
         }
     }
 
@@ -7342,13 +7361,13 @@ class Puzzle {
             this.set_value('surface', key, value, cc);
     }
 
-    // redraw a single value
+    // redraw a single value. returns true iff it knew how
     rd_single(prop, key, old_value) {
         const value = this[this.mode.qa][prop][key];
         switch (prop) {
             case 'symbol':
                 // hide old symbol if it exists
-                if (old_value !== undefined) this.draw_symbol(this.mode.qa, old_layer, key);
+                if (old_value !== undefined) this.draw_symbol(this.mode.qa, old_value[2], key);
                 // draw new symbol
                 if (old_value?.[2] !== value?.[2]) this.draw_symbol(this.mode.qa, null, key);
                 break;
@@ -7364,8 +7383,10 @@ class Puzzle {
             
             default:
                 console.log('warning: redraw (set) not implemented for', prop);
+                return false;
                 break;
         }
+        return true;
     }
 
     /*
