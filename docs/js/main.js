@@ -247,7 +247,7 @@ onload = function() {
                             }
                         }
                     }
-                    pu.redraw();
+                    pu.draw_selection();
                 } else {
                     pu.mouse_mode = "move";
                     pu.mouseevent(x, y, num);
@@ -382,7 +382,7 @@ onload = function() {
             }
 
             pu.selection = [];
-            pu.redraw();
+            pu.draw_selection();
             e.returnValue = false;
             return false;
         }

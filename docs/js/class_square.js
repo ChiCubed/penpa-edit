@@ -596,6 +596,8 @@ class Puzzle_square extends Puzzle {
                         this.cursolS = 4 * (this.cursol + this.nx0 * this.ny0);
                     }
                 }
+                this.draw_cursol();
+                this.draw_selection();
             } else {
                 switch (c) {
                     case 0:
@@ -619,9 +621,10 @@ class Puzzle_square extends Puzzle {
                 if (!this.cellsoutsideFrame.includes(this.cursol)) {
                     this.cursolS = 4 * (this.cursol + this.nx0 * this.ny0);
                 }
+                this.draw_cursol();
+                this.draw_selection();
             }
         }
-        this.redraw();
     }
 
     direction_arrow8(x, y, x0, y0) {

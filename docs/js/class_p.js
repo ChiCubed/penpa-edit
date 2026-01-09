@@ -7342,27 +7342,17 @@ class Puzzle {
             this.set_value('surface', key, value, cc);
     }
 
-    /*
-        functions to set/remove a value and redraw.
-        special handling for setting surface w/ array of color values
-    */
-    rd_set(prop, key, value, color_value = undefined) {
-        let old_layer = prop == 'symbol' ? this[this.mode.qa].symbol[key]?.[2] : undefined;
-
-        if (prop == 'surface') {
-            this.set_surface(key, value, color_value);
-        } else {
-            this.set_value(prop, key, value, color_value);
-        }
-
+    // redraw a single value
+    rd_single(prop, key, old_value) {
+        const value = this[this.mode.qa][prop][key];
         switch (prop) {
             case 'symbol':
                 // hide old symbol if it exists
-                if (old_layer !== undefined) this.draw_symbol(this.mode.qa, old_layer, key);
+                if (old_value !== undefined) this.draw_symbol(this.mode.qa, old_layer, key);
                 // draw new symbol
-                if (old_layer !== value[2]) this.draw_symbol(this.mode.qa, null, key);
+                if (old_value?.[2] !== value?.[2]) this.draw_symbol(this.mode.qa, null, key);
                 break;
-            
+
             case 'surface':
             case 'line':
             case 'lineE':
@@ -7371,37 +7361,31 @@ class Puzzle {
             case 'numberS':
                 this['draw_' + prop](this.mode.qa, key);
                 break;
-        
+            
             default:
                 console.log('warning: redraw (set) not implemented for', prop);
                 break;
         }
     }
 
-    rd_remove(prop, key, remove_color = false) {
-        let old_layer = prop == 'symbol' ? this[this.mode.qa].symbol[key]?.[2] : undefined;
-
-        this.remove_value(prop, key, prop == 'surface' || remove_color);
-
-        switch (prop) {
-            case 'symbol':
-                // hide old symbol if it exists
-                if (old_layer !== undefined) this.draw_symbol(this.mode.qa, old_layer, key);
-                break;
-            
-            case 'surface':
-            case 'line':
-            case 'lineE':
-            case 'wall':
-            case 'number':
-            case 'numberS':
-                this['draw_' + prop](this.mode.qa, key);
-                break;
-        
-            default:
-                console.log('warning: redraw (remove) not implemented for', prop);
-                break;
+    /*
+        functions to set/remove a value and redraw.
+        special handling for setting surface w/ array of color values
+    */
+    rd_set(prop, key, value, color_value = undefined) {
+        let old_value = this[this.mode.qa][prop][key];
+        if (prop == 'surface') {
+            this.set_surface(key, value, color_value);
+        } else {
+            this.set_value(prop, key, value, color_value);
         }
+        this.rd_single(prop, key, old_value);
+    }
+
+    rd_remove(prop, key, remove_color = false) {
+        let old_value = this[this.mode.qa][prop][key];
+        this.remove_value(prop, key, prop == 'surface' || remove_color);
+        this.rd_single(prop, key, old_value);
     }
 
     // like rd_remove but skips if already falsy
@@ -7793,11 +7777,11 @@ class Puzzle {
 
                             for (var j = 0; j < 4; j++)
                                 if (this[this.mode.qa].numberS[corner_cursor + j])
-                                    this.remove_value("numberS", corner_cursor + j);
+                                    this.rd_remove("numberS", corner_cursor + j);
 
                             for (var j = 0; j < 4; j++)
                                 if (this[this.mode.qa].numberS[side_cursor + j])
-                                    this.remove_value("numberS", side_cursor + j);
+                                    this.rd_remove("numberS", side_cursor + j);
                         }
 
                         if (str_num.indexOf(key) != -1 && this[this.mode.qa].number[k]) {
@@ -7813,7 +7797,7 @@ class Puzzle {
                             number = key;
                         }
 
-                        this.set_value("number", k, [number, submode[1], submode[0], ...orientation]);
+                        this.rd_set("number", k, [number, submode[1], submode[0], ...orientation]);
                         break;
                     case "2": // Arrow
                         if (this[this.mode.qa].number[k] && this[this.mode.qa].number[k][2] != "7") {
@@ -7837,7 +7821,7 @@ class Puzzle {
                         } else {
                             number = key;
                         }
-                        this.set_value("number", k, [number + arrow, submode[1], submode[0], ...orientation]);
+                        this.rd_set("number", k, [number + arrow, submode[1], submode[0], ...orientation]);
                         break;
                     case "3": // 1/4, corner
                     case "9": // Sides
@@ -7847,7 +7831,7 @@ class Puzzle {
                             con = "";
                         }
                         number = con + key;
-                        this.set_value("numberS", k, [number, submode[1], ...orientation]);
+                        this.rd_set("numberS", k, [number, submode[1], ...orientation]);
                         break;
                     case "4": //tapa
                         if (key === ".") { key = " "; }
@@ -7868,7 +7852,7 @@ class Puzzle {
                         } else { // Overwrite if arrow
                             number = key;
                         }
-                        this.set_value("number", k, [number, submode[1], submode[0], ...orientation]);
+                        this.rd_set("number", k, [number, submode[1], submode[0], ...orientation]);
                         break;
                     case "5": // Small
                     case "6": // Medium
@@ -7883,7 +7867,7 @@ class Puzzle {
                         const limit = (submode[0] === "8") ? 1000 : 10;
                         if (con.length < limit) {
                             number = con + key;
-                            this.set_value("number", k, [number, submode[1], submode[0], ...orientation]);
+                            this.rd_set("number", k, [number, submode[1], submode[0], ...orientation]);
                         }
                         break;
                     case "7": // Candidates
@@ -7901,6 +7885,7 @@ class Puzzle {
                             let value = [number, submode[1], submode[0], ...orientation];
                             this[this.mode.qa][prop][k] = value;
                             this.record_replay(prop, k, this.undoredo_counter);
+                            this.rd_single(prop, k, null);
                         }
                         break;
                     case "11": // Killer Sum
@@ -7911,11 +7896,10 @@ class Puzzle {
                             con = "";
                         }
                         number = con + key;
-                        this.set_value("numberS", corner_cursor, [number, submode[1], ...orientation]);
+                        this.rd_set("numberS", corner_cursor, [number, submode[1], ...orientation]);
                         break;
                 }
             }
-            this.redraw();
         } else if (edit_mode === "symbol") {
             if (str_num.indexOf(key) != -1) {
                 const symbolname = this.mode[this.mode.qa].symbol[0];
@@ -8538,6 +8522,7 @@ class Puzzle {
                                 delete this[this.mode.qa].numberS[k];
                             }
                             this.record_replay("numberS", k, this.undoredo_counter);
+                            this.rd_single('numberS', k);
                         }
                     } else if (submode === "11") {
                         var corner_cursor = 4 * (k + this.nx0 * this.ny0);
@@ -8550,6 +8535,7 @@ class Puzzle {
                                 delete this[this.mode.qa].numberS[corner_cursor];
                             }
                             this.record_replay("numberS", corner_cursor, this.undoredo_counter);
+                            this.rd_single('numberS', k);
                         }
                     } else {
                         if (this[this.mode.qa].number[k] && this[this.mode.qa].number[k][2] != 7) {
@@ -8575,6 +8561,7 @@ class Puzzle {
                                 }
                             }
                             this.record_replay("number", k, this.undoredo_counter);
+                            this.rd_single('number', k);
                         }
                     }
                 }
@@ -8582,11 +8569,9 @@ class Puzzle {
         } else if (this.mode[this.mode.qa].edit_mode === "multicolor") {
             this.undoredo_counter++;
             for (var k of this.selection) {
-                if (this[this.mode.qa].surface[k])
-                    this.remove_value("surface", k);
+                this.rd_try_remove('surface', k);
             }
         }
-        this.redraw();
     }
 
     /////////////////////////////
@@ -9385,7 +9370,7 @@ class Puzzle {
                     this.cursolS = 4 * (this.cursol + this.nx0 * this.ny0);
                 }
             }
-            this.redraw();
+            this.draw_cursol();
         } else if (this.mouse_mode === "down_right") {
             this.cursol = num;
 
@@ -9395,7 +9380,7 @@ class Puzzle {
                     this.cursolS = 4 * (this.cursol + this.nx0 * this.ny0);
                 }
             }
-            this.redraw();
+            this.draw_cursol();
         } else if (this.mouse_mode === "move") {
             if (this.mode[this.mode.qa][this.mode[this.mode.qa].edit_mode][0] === "2" && this.drawing) {
                 this.re_numberarrow(x, y);
@@ -9423,10 +9408,12 @@ class Puzzle {
                     this.selection = [this.cursol]; // update selection
                 }
             }
-            this.redraw();
+            this.draw_cursol();
+            this.draw_selection();
         } else if (this.mouse_mode === "down_right") {
             this.cursolS = num;
-            this.redraw();
+            this.draw_cursol();
+            this.draw_selection();
         }
     }
 
@@ -9453,7 +9440,8 @@ class Puzzle {
                     this.cursolS = 4 * (this.cursol + this.nx0 * this.ny0);
                 }
             }
-            this.redraw();
+            this.draw_cursol();
+            this.draw_selection();
         } else if (this.mouse_mode === "move") {
             // if the first selected position is edge then do not consider move
             if (this.cursol && this.cursol >= this.nx0 * this.ny0 &&
@@ -9471,7 +9459,8 @@ class Puzzle {
                 if (this.point[num].type === 0)
                     this.selection.push(num);
             }
-            this.redraw();
+            this.draw_cursol();
+            this.draw_selection();
         } else if (this.mouse_mode === "up") {
             this.drawing = false;
         } else if (this.mouse_mode === "out") {
@@ -12886,6 +12875,11 @@ class Puzzle {
 
     draw_selection() {
         this.ctx.setLayer('selection');
+
+        // clear old selection drawing
+        var root = this.ctx.target, el = root.firstChild;
+        while(!!el){ root.removeChild(el); el = root.firstChild;}
+
         let edit_mode = this.mode[this.mode.qa].edit_mode;
         if (edit_mode === "sudoku" || this.number_multi_enabled() || edit_mode === "multicolor" ||
             (edit_mode === "cage" && document.getElementById("sub_cage1").checked)) {
