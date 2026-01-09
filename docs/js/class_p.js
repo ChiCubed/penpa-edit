@@ -7981,19 +7981,11 @@ class Puzzle {
                                     var edge_cursor = this.get_neighbors(k, 'edges');
 
                                     for (var j = 0; j < 4; j++) {
-                                        if (this[this.mode.qa].numberS[corner_cursor + j]) {
-                                            this.record("numberS", corner_cursor + j, this.undoredo_counter);
-                                            delete this[this.mode.qa].numberS[corner_cursor + j];
-                                            this.record_replay("numberS", corner_cursor + j, this.undoredo_counter);
-                                        }
+                                        this.rd_try_remove('numberS', corner_cursor + j);
                                     }
 
                                     for (var j = 0; j < 4; j++) {
-                                        if (this[this.mode.qa].numberS[side_cursor + j]) {
-                                            this.record("numberS", side_cursor + j, this.undoredo_counter);
-                                            delete this[this.mode.qa].numberS[side_cursor + j];
-                                            this.record_replay("numberS", side_cursor + j, this.undoredo_counter);
-                                        }
+                                        this.rd_try_remove('numberS', side_cursor + j);
                                     }
 
                                     // Edge marking clean up, but not working correctly
@@ -8042,6 +8034,7 @@ class Puzzle {
                                     this[this.mode.qa].number[k] = [key, submode[1], "1"]; // Normal submode is 1
                                 }
                                 this.record_replay("number", k, this.undoredo_counter);
+                                this.rd_single('number', k);
                             }
                         }
                     }
@@ -8136,30 +8129,30 @@ class Puzzle {
 
                                     // remove the last digit from old location
                                     if ((con.length + 1) < (5 - j_start)) {
-                                        this.remove_value("numberS", corner_cursor + con.length + j_start);
+                                        this.rd_remove("numberS", corner_cursor + con.length + j_start);
                                     } else {
-                                        this.remove_value("numberS", side_cursor + con.length - 4 + 2 * j_start);
+                                        this.rd_remove("numberS", side_cursor + con.length - 4 + 2 * j_start);
                                     }
                                     if (con) {
                                         if (con.length < (5 - j_start)) {
                                             for (var j = j_start; j < (con.length + j_start); j++) {
-                                                this.set_value("numberS", corner_cursor + j, [con[j - j_start], submode[1]]);
+                                                this.rd_set("numberS", corner_cursor + j, [con[j - j_start], submode[1]]);
                                             }
                                         } else {
                                             for (var j = j_start; j < 4; j++) {
-                                                this.set_value("numberS", corner_cursor + j, [con[j - j_start], submode[1]]);
+                                                this.rd_set("numberS", corner_cursor + j, [con[j - j_start], submode[1]]);
                                             }
                                             for (var j = 4 + j_start; j < (con.length + 2 * j_start); j++) {
-                                                this.set_value("numberS", side_cursor + j - 4, [con[j - 2 * j_start], submode[1]]);
+                                                this.rd_set("numberS", side_cursor + j - 4, [con[j - 2 * j_start], submode[1]]);
                                             }
                                         }
                                     }
                                 } else if (con.indexOf(key) === -1 && con.length < length_limit) { // If digit doesnt exist in the cell
                                     con += key;
                                     if (con.length < (5 - j_start)) {
-                                        this.set_value("numberS", corner_cursor + con.length - 1 + j_start, [key, submode[1]]);
+                                        this.rd_set("numberS", corner_cursor + con.length - 1 + j_start, [key, submode[1]]);
                                     } else {
-                                        this.set_value("numberS", side_cursor + con.length - 5 + 2 * j_start, [key, submode[1]]);
+                                        this.rd_set("numberS", side_cursor + con.length - 5 + 2 * j_start, [key, submode[1]]);
                                     }
                                 }
                             }
@@ -8246,16 +8239,14 @@ class Puzzle {
                                     UserSettings.sudoku_centre_size === SUDOKU_CENTRE_SMALL) { // all small
                                     size = "5";
                                 }
-                                this.set_value("number", k, [number, submode[1], size]);
+                                this.rd_set("number", k, [number, submode[1], size]);
                             } else {
-                                this.remove_value("number", k);
+                                this.rd_remove("number", k);
                             }
                         }
                     }
                     break;
             }
-
-            this.redraw();
         } else if (edit_mode === "multicolor") {
             key = parseInt(key);
             if (key === 0)
